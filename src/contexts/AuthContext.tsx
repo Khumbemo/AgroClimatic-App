@@ -16,6 +16,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Bypass Firebase auth listener if running in demo mode without real API keys
+    if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key') {
+      setLoading(false);
+      // Auto-login for convenience during UI testing
+      setUser({ uid: 'demo-user', email: 'demo@forestry.org', displayName: 'Nursery Manager' } as User);
+      return () => {};
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -29,6 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key') {
+      setUser(null);
+      return;
+    }
     await signOut(auth);
   };
 
@@ -44,3 +56,4 @@ export const useAuth = () => {
   if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+
