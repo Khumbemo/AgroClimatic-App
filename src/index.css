@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,40 +6,43 @@
 
 @layer base {
   :root {
-    --glass-bg: rgba(255, 255, 255, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(34, 197, 94, 0.2);
+    --glass-shadow: 0 4px 20px 0 rgba(20, 83, 45, 0.05);
   }
 
   body {
     font-family: 'Outfit', sans-serif;
-    /* Soft, premium background with a subtle mesh effect */
-    background-color: #f7f9fa;
+    background-color: #f0f4f2;
+    /* Scientific grid/topography subtle background */
     background-image: 
-      radial-gradient(at 0% 0%, hsla(145, 100%, 94%, 1) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(160, 100%, 96%, 1) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(210, 100%, 97%, 1) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, hsla(120, 100%, 96%, 1) 0px, transparent 50%);
+      linear-gradient(rgba(20, 83, 45, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 83, 45, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
     background-attachment: fixed;
-    color: #1a202c;
+    color: #1a2f23;
   }
 }
 
 @layer utilities {
+  .font-mono-sci {
+    font-family: 'Space Mono', monospace;
+  }
+
   .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
   
   .glass-pill {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(20, 83, 45, 0.15);
+    box-shadow: 0 10px 40px -10px rgba(20, 83, 45, 0.15);
   }
 
   .text-gradient {
@@ -53,20 +56,21 @@
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
 @layer components {
+  /* Sharper, more precise card styling */
   .bento-card {
-    @apply glass-panel rounded-[2rem] p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-green-900/5;
+    @apply glass-panel rounded-xl p-5 transition-all duration-300 hover:border-green-400 hover:shadow-md hover:shadow-green-900/5;
   }
 }
 
 @keyframes float {
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-5px); }
   100% { transform: translateY(0px); }
 }
 
@@ -77,7 +81,7 @@
 }
 
 .animate-float {
-  animation: float 6s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
 }
 
 .animate-pulse-glow {
