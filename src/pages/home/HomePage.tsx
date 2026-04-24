@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ThermometerSun, Wind, ChevronRight, Microscope, Target, Fingerprint, TreePine } from 'lucide-react';
+import { Activity, Droplets, ThermometerSun, Wind, ChevronRight, Microscope, Target, Fingerprint, TreePine } from 'lucide-react';
 
 const HomePage = () => {
   return (

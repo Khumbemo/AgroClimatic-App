@@ -10,6 +10,13 @@ import ToolsPage from './pages/tools/ToolsPage';
 import CalcPage from './pages/calc/CalcPage';
 import ChatPage from './pages/chat/ChatPage';
 
+// Scientific tool pages
+import EnvironmentalLogsPage from './pages/tools/EnvironmentalLogsPage';
+import GerminationTrackerPage from './pages/tools/GerminationTrackerPage';
+import TreatmentLogsPage from './pages/tools/TreatmentLogsPage';
+import MorphometricsPage from './pages/tools/MorphometricsPage';
+import SpatialMappingPage from './pages/tools/SpatialMappingPage';
+
 // Existing tool pages
 import BatchListPage from './pages/nursery/BatchListPage';
 import BatchDetailPage from './pages/nursery/BatchDetailPage';
@@ -39,6 +46,11 @@ const App: React.FC = () => {
           <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route index element={<HomePage />} />
             <Route path="tools" element={<ToolsPage />} />
+            <Route path="tools/environmental" element={<EnvironmentalLogsPage />} />
+            <Route path="tools/germination" element={<GerminationTrackerPage />} />
+            <Route path="tools/treatments" element={<TreatmentLogsPage />} />
+            <Route path="tools/morphometrics" element={<MorphometricsPage />} />
+            <Route path="tools/spatial" element={<SpatialMappingPage />} />
             <Route path="calc" element={<CalcPage />} />
             <Route path="chat" element={<ChatPage />} />
             

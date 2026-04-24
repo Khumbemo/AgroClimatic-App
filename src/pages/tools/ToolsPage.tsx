@@ -15,11 +15,11 @@ const ToolsPage = () => {
     {
       category: 'Scientific Features',
       items: [
-        { title: 'Environmental Logs', icon: ThermometerSun, desc: 'Record temp, humidity, PAR', to: '#', color: 'from-orange-400 to-amber-600', shadow: 'shadow-orange-500/20', text: 'text-orange-700' },
-        { title: 'Germination Tracker', icon: Activity, desc: 'Daily sprout counts & metrics', to: '#', color: 'from-teal-400 to-emerald-600', shadow: 'shadow-teal-500/20', text: 'text-teal-700' },
-        { title: 'Treatment Logs', icon: Droplets, desc: 'Fertilization & pre-sowing info', to: '#', color: 'from-cyan-400 to-blue-600', shadow: 'shadow-cyan-500/20', text: 'text-cyan-700' },
-        { title: 'Morphometrics', icon: Ruler, desc: 'Stem caliper, height, LAI', to: '#', color: 'from-indigo-400 to-violet-600', shadow: 'shadow-indigo-500/20', text: 'text-indigo-700' },
-        { title: 'Spatial Mapping', icon: Map, desc: 'Greenhouse bench layouts', to: '#', color: 'from-rose-400 to-red-600', shadow: 'shadow-rose-500/20', text: 'text-rose-700' },
+        { title: 'Environmental Logs', icon: ThermometerSun, desc: 'Record temp, humidity, PAR', to: '/tools/environmental', color: 'from-orange-400 to-amber-600', shadow: 'shadow-orange-500/20', text: 'text-orange-700' },
+        { title: 'Germination Tracker', icon: Activity, desc: 'Daily sprout counts & metrics', to: '/tools/germination', color: 'from-teal-400 to-emerald-600', shadow: 'shadow-teal-500/20', text: 'text-teal-700' },
+        { title: 'Treatment Logs', icon: Droplets, desc: 'Fertilization & pre-sowing info', to: '/tools/treatments', color: 'from-cyan-400 to-blue-600', shadow: 'shadow-cyan-500/20', text: 'text-cyan-700' },
+        { title: 'Morphometrics', icon: Ruler, desc: 'Stem caliper, height, LAI', to: '/tools/morphometrics', color: 'from-indigo-400 to-violet-600', shadow: 'shadow-indigo-500/20', text: 'text-indigo-700' },
+        { title: 'Spatial Mapping', icon: Map, desc: 'Greenhouse bench layouts', to: '/tools/spatial', color: 'from-rose-400 to-red-600', shadow: 'shadow-rose-500/20', text: 'text-rose-700' },
       ]
     }
   ];
@@ -38,24 +38,13 @@ const ToolsPage = () => {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {section.items.map((item, i) => (
-              item.to !== '#' ? (
-                <NavLink key={i} to={item.to} className="bento-card p-5 flex flex-col items-start bg-white/60 hover:bg-white transition-all group">
-                  <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg ${item.shadow} group-hover:scale-110 transition-transform duration-300`}>
-                    <item.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className={`font-black text-sm tracking-tight mb-1 ${item.text}`}>{item.title}</h3>
-                  <p className="text-[10px] text-gray-500 font-medium leading-snug">{item.desc}</p>
-                </NavLink>
-              ) : (
-                <div key={i} className="bento-card p-5 flex flex-col items-start bg-white/30 backdrop-blur-sm opacity-70 grayscale-[30%]">
-                  <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-sm`}>
-                    <item.icon className="w-5 h-5 text-white opacity-80" />
-                  </div>
-                  <h3 className="font-bold text-sm text-gray-800 tracking-tight mb-1">{item.title}</h3>
-                  <p className="text-[10px] text-gray-500 font-medium leading-snug mb-3">{item.desc}</p>
-                  <span className="text-[8px] bg-gray-200/80 text-gray-600 px-2 py-1 rounded-full uppercase font-black tracking-widest mt-auto border border-white/50">Coming Soon</span>
+              <NavLink key={i} to={item.to} className="bento-card p-5 flex flex-col items-start bg-white/60 hover:bg-white transition-all group">
+                <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg ${item.shadow} group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon className="w-5 h-5 text-white" />
                 </div>
-              )
+                <h3 className={`font-black text-sm tracking-tight mb-1 ${item.text}`}>{item.title}</h3>
+                <p className="text-[10px] text-gray-500 font-medium leading-snug">{item.desc}</p>
+              </NavLink>
             ))}
           </div>
         </div>
