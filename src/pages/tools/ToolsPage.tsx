@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Activity, ThermometerSun, Leaf, Droplets, Map, Ruler, Database } from 'lucide-react';
+import { Activity, ThermometerSun, Leaf, Droplets, Map, Ruler, Database, FlaskConical, Beaker, MapPin, Skull, ShieldCheck, Dna } from 'lucide-react';
 
 const ToolsPage = () => {
   const tools = [
@@ -18,8 +18,18 @@ const ToolsPage = () => {
         { title: 'Environmental Logs', icon: ThermometerSun, desc: 'Record temp, humidity, PAR', to: '/tools/environmental', color: 'from-orange-400 to-amber-600', shadow: 'shadow-orange-500/20', text: 'text-orange-700' },
         { title: 'Germination Tracker', icon: Activity, desc: 'Daily sprout counts & metrics', to: '/tools/germination', color: 'from-teal-400 to-emerald-600', shadow: 'shadow-teal-500/20', text: 'text-teal-700' },
         { title: 'Treatment Logs', icon: Droplets, desc: 'Fertilization & pre-sowing info', to: '/tools/treatments', color: 'from-cyan-400 to-blue-600', shadow: 'shadow-cyan-500/20', text: 'text-cyan-700' },
-        { title: 'Morphometrics', icon: Ruler, desc: 'Stem caliper, height, LAI', to: '/tools/morphometrics', color: 'from-indigo-400 to-violet-600', shadow: 'shadow-indigo-500/20', text: 'text-indigo-700' },
+        { title: 'Morphometrics', icon: Ruler, desc: 'Caliper, height, SPAD, biomass', to: '/tools/morphometrics', color: 'from-indigo-400 to-violet-600', shadow: 'shadow-indigo-500/20', text: 'text-indigo-700' },
         { title: 'Spatial Mapping', icon: Map, desc: 'Greenhouse bench layouts', to: '/tools/spatial', color: 'from-rose-400 to-red-600', shadow: 'shadow-rose-500/20', text: 'text-rose-700' },
+      ]
+    },
+    {
+      category: 'Advanced Research',
+      items: [
+        { title: 'Experimental Design', icon: FlaskConical, desc: 'RCBD, Latin Square, blind mode', to: '/tools/experimental', color: 'from-violet-400 to-purple-600', shadow: 'shadow-violet-500/20', text: 'text-violet-700' },
+        { title: 'Substrate & Nutrients', icon: Beaker, desc: 'Leachate pH/EC, media profiles', to: '/tools/substrate', color: 'from-lime-400 to-green-600', shadow: 'shadow-lime-500/20', text: 'text-lime-700' },
+        { title: 'Provenance & Lineage', icon: MapPin, desc: 'GPS source, genotype tagging', to: '/tools/provenance', color: 'from-amber-400 to-orange-600', shadow: 'shadow-amber-500/20', text: 'text-amber-700' },
+        { title: 'Mortality Diagnostics', icon: Skull, desc: 'Cause codes, survival analysis', to: '/tools/mortality', color: 'from-red-400 to-rose-600', shadow: 'shadow-red-500/20', text: 'text-red-700' },
+        { title: 'Data Quality & Audit', icon: ShieldCheck, desc: 'Calibration logs, audit trail', to: '/tools/audit', color: 'from-sky-400 to-blue-600', shadow: 'shadow-sky-500/20', text: 'text-sky-700' },
       ]
     }
   ];

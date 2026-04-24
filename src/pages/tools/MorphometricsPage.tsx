@@ -15,6 +15,9 @@ const MorphometricsPage = () => {
     avgRCDmm: '',
     avgLeaves: '',
     leafAreaIndex: '',
+    spadValue: '',
+    shootFreshWeight: '',
+    rootFreshWeight: '',
     shootDryWeight: '',
     rootDryWeight: '',
   });
@@ -42,7 +45,7 @@ const MorphometricsPage = () => {
     setLogs(updated);
     localStorage.setItem('ac_morpho_logs', JSON.stringify(updated));
     setShowForm(false);
-    setForm({ ...form, avgHeightCm: '', avgRCDmm: '', avgLeaves: '', leafAreaIndex: '', shootDryWeight: '', rootDryWeight: '' });
+    setForm({ ...form, avgHeightCm: '', avgRCDmm: '', avgLeaves: '', leafAreaIndex: '', spadValue: '', shootFreshWeight: '', rootFreshWeight: '', shootDryWeight: '', rootDryWeight: '' });
   };
 
   // Derived metrics
@@ -104,15 +107,18 @@ const MorphometricsPage = () => {
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Non-Destructive Measurements</p>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Height (cm)</label><input type="number" step="0.1" placeholder="15.2" value={form.avgHeightCm} onChange={e => setForm({...form, avgHeightCm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RCD (mm)</label><input type="number" step="0.01" placeholder="4.20" value={form.avgRCDmm} onChange={e => setForm({...form, avgRCDmm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Leaves (#)</label><input type="number" step="1" placeholder="6" value={form.avgLeaves} onChange={e => setForm({...form, avgLeaves: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">SPAD Value</label><input type="number" step="0.1" placeholder="42.5" value={form.spadValue} onChange={e => setForm({...form, spadValue: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                 </div>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Destructive Sampling (Optional)</p>
                 <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Shoot FW (g)</label><input type="number" step="0.01" placeholder="5.20" value={form.shootFreshWeight} onChange={e => setForm({...form, shootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Root FW (g)</label><input type="number" step="0.01" placeholder="3.40" value={form.rootFreshWeight} onChange={e => setForm({...form, rootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Shoot DW (g)</label><input type="number" step="0.01" placeholder="2.45" value={form.shootDryWeight} onChange={e => setForm({...form, shootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Root DW (g)</label><input type="number" step="0.01" placeholder="1.80" value={form.rootDryWeight} onChange={e => setForm({...form, rootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
                 </div>
