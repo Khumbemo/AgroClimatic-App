@@ -99,7 +99,7 @@ const SpatialMappingPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Spatial Mapping</h1>
-          <p className="text-xs text-gray-500 font-mono-sci mt-0.5">GREENHOUSE BENCH LAYOUT ENGINE</p>
+          
         </div>
         <button onClick={() => setShowNewForm(true)} className="bg-gradient-to-r from-rose-500 to-red-600 text-white p-2.5 rounded-xl shadow-lg shadow-rose-500/30 hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
@@ -223,7 +223,7 @@ const SpatialMappingPage = () => {
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
           <Map className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="font-bold text-sm text-gray-500">No greenhouse layouts created.</p>
-          <p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO CREATE A BENCH MAP</p>
+          
         </div>
       )}
     </div>

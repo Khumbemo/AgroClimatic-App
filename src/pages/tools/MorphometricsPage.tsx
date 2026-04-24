@@ -66,7 +66,7 @@ const MorphometricsPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Morphometrics</h1>
-          <p className="text-xs text-gray-500 font-mono-sci mt-0.5">SEEDLING QUALITY INDEX PROTOCOL</p>
+          
         </div>
         <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-violet-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/30 hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
@@ -134,7 +134,7 @@ const MorphometricsPage = () => {
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
           <Ruler className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="font-bold text-sm text-gray-500">No morphometric data recorded.</p>
-          <p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO BEGIN MEASUREMENTS</p>
+          
         </div>
       ) : (
         <div className="space-y-3">

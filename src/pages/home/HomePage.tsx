@@ -97,10 +97,9 @@ const HomePage = () => {
             </p>
           </div>
           
-          <p className="text-gray-300 text-xs font-medium leading-relaxed opacity-90">
-            3 batches meet outplanting biometric thresholds. Validation required.
+          <p className="text-gray-300 text-xs font-medium leading-relaxed opacity-90 mb-4">
+            Validation required.
           </p>
-          
           <button className="mt-5 w-full bg-green-600/20 border border-green-500/50 text-green-400 px-4 py-2.5 rounded text-[10px] font-mono-sci font-bold uppercase tracking-[0.2em] hover:bg-green-500/30 transition-all flex items-center justify-between group-hover:text-green-300">
             INITIATE REVIEW <ChevronRight className="w-4 h-4" />
           </button>

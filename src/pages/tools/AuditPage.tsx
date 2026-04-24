@@ -40,7 +40,7 @@ const AuditPage = () => {
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Quality & Audit</h1><p className="text-xs text-gray-500 font-mono-sci mt-0.5">INSTRUMENT CALIBRATION LOG</p></div>
+        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Data Quality & Audit</h1></div>
         <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-sky-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
       </div>
 
@@ -71,7 +71,7 @@ const AuditPage = () => {
       )}
 
       {logs.length===0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><ShieldCheck className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No calibration records.</p><p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO LOG INSTRUMENT CALIBRATION</p></div>
+        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><ShieldCheck className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No calibration records.</p></div>
       ) : (
         <div className="space-y-3">{logs.map(l=>{const st=getStatus(l.nextDueDate);return(
           <div key={l.id} className="bento-card p-4 bg-white/90 border border-gray-200">

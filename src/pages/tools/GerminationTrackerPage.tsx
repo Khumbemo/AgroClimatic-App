@@ -70,7 +70,7 @@ const GerminationTrackerPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Germination Tracker</h1>
-          <p className="text-xs text-gray-500 font-mono-sci mt-0.5">ISTA PROTOCOL COMPLIANT</p>
+          
         </div>
         <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-2.5 rounded-xl shadow-lg shadow-teal-500/30 hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
@@ -136,7 +136,7 @@ const GerminationTrackerPage = () => {
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
           <Sprout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="font-bold text-sm text-gray-500">No germination data recorded.</p>
-          <p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO BEGIN COUNTING</p>
+          
         </div>
       ) : (
         <div className="bento-card p-4 bg-white/90 border border-gray-200">

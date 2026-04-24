@@ -28,7 +28,7 @@ const ProvenancePage = () => {
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Provenance & Lineage</h1><p className="text-xs text-gray-500 font-mono-sci mt-0.5">SEED SOURCE & GENETIC TRACKING</p></div>
+        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Provenance & Lineage</h1></div>
         <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-2.5 rounded-xl shadow-lg shadow-amber-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
       </div>
 
@@ -54,7 +54,7 @@ const ProvenancePage = () => {
                   <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Canopy Position</label><input type="text" placeholder="Co-dominant" value={form.canopyPosition} onChange={e=>setForm({...form,canopyPosition:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
                 </div>
               </div>
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Mother Trees Sampled (#)</label><input type="number" value={form.motherTreeCount} onChange={e=>setForm({...form,motherTreeCount:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
+              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Mother Trees</label><input type="number" value={form.motherTreeCount} onChange={e=>setForm({...form,motherTreeCount:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
               <div className="p-3 bg-purple-50 rounded-xl border border-purple-100"><p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-3">Genetic & Phenotypic Tags</p>
                 <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Genotype Markers</label><input type="text" placeholder="SSR-12, cpDNA haplotype B" value={form.genotypeMarkers} onChange={e=>setForm({...form,genotypeMarkers:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
                 <div className="mt-3"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Phenotype Traits</label><input type="text" placeholder="Drought-tolerant, red bark" value={form.phenotypeTraits} onChange={e=>setForm({...form,phenotypeTraits:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
@@ -67,7 +67,7 @@ const ProvenancePage = () => {
       )}
 
       {records.length===0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No provenance records.</p><p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO LOG SEED SOURCE</p></div>
+        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No provenance records.</p></div>
       ) : records.map(r=>(
         <div key={r.id} className="bento-card p-4 bg-white/90 border border-gray-200 space-y-3">
           <div className="flex justify-between items-center"><span className="font-mono-sci text-[10px] font-bold text-amber-600">{r.id}</span><span className="font-mono-sci text-[10px] text-gray-400">{r.collectionDate}</span></div>

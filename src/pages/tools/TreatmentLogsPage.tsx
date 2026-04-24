@@ -78,7 +78,7 @@ const TreatmentLogsPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Treatment Logs</h1>
-          <p className="text-xs text-gray-500 font-mono-sci mt-0.5">INTERVENTION & TREATMENT RECORDS</p>
+          
         </div>
         <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-cyan-500/30 hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />

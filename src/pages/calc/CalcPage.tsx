@@ -170,8 +170,7 @@ const CalcPage = () => {
   return (
     <div className="space-y-6 pb-8 animate-page-in">
       <div className="px-2">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Calculators</h1>
-        <p className="text-sm text-gray-500 mt-2 font-medium">Scientific precision tools.</p>
+        <h1 className="text-3xl font-black tracking-tight">Calculators</h1>
       </div>
 
       <div className="space-y-4 px-2">
@@ -181,8 +180,7 @@ const CalcPage = () => {
               <calc.icon className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className={`font-black text-sm tracking-tight mb-0.5 ${calc.text}`}>{calc.title}</h3>
-              <p className="text-[11px] text-gray-500 font-medium">{calc.desc}</p>
+              <h3 className={`font-black text-sm tracking-tight ${calc.text}`}>{calc.title}</h3>
             </div>
             <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white transition-colors text-gray-400">
               <ChevronRight className="w-4 h-4" />
@@ -192,8 +190,7 @@ const CalcPage = () => {
       </div>
       
       <div className="mx-2 p-8 rounded-[2rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center mt-8">
-        <Calculator className="w-8 h-8 text-gray-300 mb-2" />
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">ISO 8601 & ISTA STANDARDS VERIFIED</p>
+        <Calculator className="w-8 h-8 text-gray-300" />
       </div>
     </div>
   );

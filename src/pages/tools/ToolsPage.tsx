@@ -7,29 +7,29 @@ const ToolsPage = () => {
     {
       category: 'Core Modules',
       items: [
-        { title: 'Nursery Batches', icon: Leaf, desc: 'Manage active seed batches', to: '/nursery', color: 'from-green-400 to-emerald-600', shadow: 'shadow-green-500/20', text: 'text-green-700' },
-        { title: 'Records & Logs', icon: Database, desc: 'View past logs and seed lots', to: '/records', color: 'from-blue-400 to-indigo-600', shadow: 'shadow-blue-500/20', text: 'text-blue-700' },
-        { title: 'Species Database', icon: Activity, desc: 'Manage species profiles', to: '/species', color: 'from-purple-400 to-fuchsia-600', shadow: 'shadow-purple-500/20', text: 'text-purple-700' },
+        { title: 'Nursery Batches', icon: Leaf, to: '/nursery', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Records & Logs', icon: Database, to: '/records', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Species Database', icon: Activity, to: '/species', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
       ]
     },
     {
       category: 'Scientific Features',
       items: [
-        { title: 'Environmental Logs', icon: ThermometerSun, desc: 'Record temp, humidity, PAR', to: '/tools/environmental', color: 'from-orange-400 to-amber-600', shadow: 'shadow-orange-500/20', text: 'text-orange-700' },
-        { title: 'Germination Tracker', icon: Activity, desc: 'Daily sprout counts & metrics', to: '/tools/germination', color: 'from-teal-400 to-emerald-600', shadow: 'shadow-teal-500/20', text: 'text-teal-700' },
-        { title: 'Treatment Logs', icon: Droplets, desc: 'Fertilization & pre-sowing info', to: '/tools/treatments', color: 'from-cyan-400 to-blue-600', shadow: 'shadow-cyan-500/20', text: 'text-cyan-700' },
-        { title: 'Morphometrics', icon: Ruler, desc: 'Caliper, height, SPAD, biomass', to: '/tools/morphometrics', color: 'from-indigo-400 to-violet-600', shadow: 'shadow-indigo-500/20', text: 'text-indigo-700' },
-        { title: 'Spatial Mapping', icon: Map, desc: 'Greenhouse bench layouts', to: '/tools/spatial', color: 'from-rose-400 to-red-600', shadow: 'shadow-rose-500/20', text: 'text-rose-700' },
+        { title: 'Environmental Logs', icon: ThermometerSun, to: '/tools/environmental', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Germination Tracker', icon: Activity, to: '/tools/germination', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Treatment Logs', icon: Droplets, to: '/tools/treatments', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Morphometrics', icon: Ruler, to: '/tools/morphometrics', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Spatial Mapping', icon: Map, to: '/tools/spatial', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
       ]
     },
     {
       category: 'Advanced Research',
       items: [
-        { title: 'Experimental Design', icon: FlaskConical, desc: 'RCBD, Latin Square, blind mode', to: '/tools/experimental', color: 'from-violet-400 to-purple-600', shadow: 'shadow-violet-500/20', text: 'text-violet-700' },
-        { title: 'Substrate & Nutrients', icon: Beaker, desc: 'Leachate pH/EC, media profiles', to: '/tools/substrate', color: 'from-lime-400 to-green-600', shadow: 'shadow-lime-500/20', text: 'text-lime-700' },
-        { title: 'Provenance & Lineage', icon: MapPin, desc: 'GPS source, genotype tagging', to: '/tools/provenance', color: 'from-amber-400 to-orange-600', shadow: 'shadow-amber-500/20', text: 'text-amber-700' },
-        { title: 'Mortality Diagnostics', icon: Skull, desc: 'Cause codes, survival analysis', to: '/tools/mortality', color: 'from-red-400 to-rose-600', shadow: 'shadow-red-500/20', text: 'text-red-700' },
-        { title: 'Data Quality & Audit', icon: ShieldCheck, desc: 'Calibration logs, audit trail', to: '/tools/audit', color: 'from-sky-400 to-blue-600', shadow: 'shadow-sky-500/20', text: 'text-sky-700' },
+        { title: 'Experimental Design', icon: FlaskConical, to: '/tools/experimental', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Substrate & Nutrients', icon: Beaker, to: '/tools/substrate', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Provenance & Lineage', icon: MapPin, to: '/tools/provenance', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Mortality Diagnostics', icon: Skull, to: '/tools/mortality', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
+        { title: 'Data Quality & Audit', icon: ShieldCheck, to: '/tools/audit', color: 'from-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/20', text: 'text-emerald-800' },
       ]
     }
   ];
@@ -37,8 +37,7 @@ const ToolsPage = () => {
   return (
     <div className="space-y-8 pb-8 animate-float" style={{ animationDuration: '12s' }}>
       <div className="px-2">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Tools & Modules</h1>
-        <p className="text-sm text-gray-500 mt-2 font-medium">Access your precision nursery data collection tools.</p>
+        <h1 className="text-3xl font-black tracking-tight">Tools</h1>
       </div>
 
       {tools.map((section, idx) => (
@@ -52,8 +51,9 @@ const ToolsPage = () => {
                 <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg ${item.shadow} group-hover:scale-110 transition-transform duration-300`}>
                   <item.icon className="w-5 h-5 text-white" />
                 </div>
-                <h3 className={`font-black text-sm tracking-tight mb-1 ${item.text}`}>{item.title}</h3>
-                <p className="text-[10px] text-gray-500 font-medium leading-snug">{item.desc}</p>
+                <div className="flex-1">
+                  <h3 className={`font-black text-sm tracking-tight ${item.text}`}>{item.title}</h3>
+                </div>
               </NavLink>
             ))}
           </div>

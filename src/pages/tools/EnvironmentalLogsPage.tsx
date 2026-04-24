@@ -58,7 +58,7 @@ const EnvironmentalLogsPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Environmental Logs</h1>
-          <p className="text-xs text-gray-500 font-mono-sci mt-0.5">MICROCLIMATE SENSOR PROTOCOL</p>
+          
         </div>
         <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-2.5 rounded-xl shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
@@ -125,7 +125,7 @@ const EnvironmentalLogsPage = () => {
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
           <ThermometerSun className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="font-bold text-sm text-gray-500">No climate entries recorded yet.</p>
-          <p className="text-xs text-gray-400 mt-1 font-mono-sci">TAP + TO BEGIN LOGGING</p>
+          
         </div>
       ) : (
         <div className="space-y-3">

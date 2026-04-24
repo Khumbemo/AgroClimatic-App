@@ -40,7 +40,7 @@ const SubstratePage = () => {
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Substrate & Nutrients</h1><p className="text-xs text-gray-500 font-mono-sci mt-0.5">LEACHATE & MEDIA ANALYSIS</p></div>
+        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Substrate & Nutrients</h1></div>
         <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-lime-500 to-green-600 text-white p-2.5 rounded-xl shadow-lg shadow-lime-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
       </div>
 
