@@ -46,7 +46,7 @@ const SettingsPage: React.FC = () => {
       </button>
 
       <div className="text-center">
-        <p className="text-[10px] text-gray-300 font-black uppercase tracking-[0.2em] mt-12">Scientific Nursery App</p>
+        <p className="text-[10px] text-gray-300 font-black uppercase tracking-[0.2em] mt-12">AgroClimatic Lab</p>
         <p className="text-[8px] text-gray-200 font-black uppercase mt-1 tracking-widest">Precision Forestry Solutions • v1.0.0</p>
       </div>
     </div>
