@@ -2,16 +2,15 @@ import React from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Wrench, Calculator, MessageSquare, Settings, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TopHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Detect if we're in a sub-page (any path with more than 1 segment)
   const pathParts = location.pathname.split('/').filter(Boolean);
   const isSubPage = pathParts.length > 1;
 
-  // Sub-page title mapping
   const subPageTitles: Record<string, string> = {
     'tools/environmental': 'Environmental Logs',
     'tools/germination': 'Germination Tracker',
@@ -35,11 +34,16 @@ const TopHeader = () => {
     <header className="sticky top-0 z-50 glass-panel border-b-0 px-4 py-3 flex justify-between items-center mx-3 mt-3 rounded-2xl">
       {isSubPage && subTitle ? (
         <>
-          <button onClick={() => navigate(-1)} className="p-2 -ml-1 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all rounded-xl">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-1 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all rounded-xl"
+          >
             <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
-          </button>
+          </motion.button>
           <span className="font-black text-sm text-gray-800 tracking-tight flex-1 text-center">{subTitle}</span>
-          <div className="w-9" /> {/* Spacer for centering */}
+          <div className="w-9" />
         </>
       ) : (
         <>
@@ -52,12 +56,14 @@ const TopHeader = () => {
               <span className="text-[8px] text-gray-400 font-mono-sci font-bold uppercase tracking-widest">Lab v1.0</span>
             </div>
           </div>
-          <button 
+          <motion.button
+            whileHover={{ rotate: 15 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/settings')}
             className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-all rounded-xl"
           >
             <Settings className="w-5 h-5" strokeWidth={2.5} />
-          </button>
+          </motion.button>
         </>
       )}
     </header>
@@ -73,7 +79,6 @@ const BottomNav = () => {
     { to: '/chat', icon: MessageSquare, label: 'Chat' },
   ];
 
-  // Highlight Tools for any /tools/* sub-route
   const getIsActive = (to: string) => {
     if (to === '/') return location.pathname === '/';
     return location.pathname.startsWith(to);
@@ -87,17 +92,34 @@ const BottomNav = () => {
             key={to}
             to={to}
             end={to === '/'}
-            className={() =>
-              cn(
-                "flex flex-col items-center justify-center w-16 h-11 rounded-2xl transition-all duration-200",
-                getIsActive(to) 
-                  ? "text-green-600 bg-green-50/80 scale-105 shadow-sm" 
-                  : "text-gray-400 hover:text-green-500"
-              )
-            }
+            className="relative flex flex-col items-center justify-center w-16 h-11"
           >
-            <Icon className="w-5 h-5 mb-0.5" strokeWidth={2.5} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+            {({ isActive }) => (
+              <>
+                <AnimatePresence>
+                  {getIsActive(to) && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-green-50/80 rounded-2xl -z-10 shadow-sm"
+                      transition={{ type: 'spring', bounce: 0.3, duration: 0.6 }}
+                    />
+                  )}
+                </AnimatePresence>
+                <Icon
+                  className={cn(
+                    "w-5 h-5 mb-0.5 transition-colors duration-300",
+                    getIsActive(to) ? "text-green-600" : "text-gray-400"
+                  )}
+                  strokeWidth={2.5}
+                />
+                <span className={cn(
+                  "text-[8px] font-black uppercase tracking-widest transition-colors duration-300",
+                  getIsActive(to) ? "text-green-600" : "text-gray-400"
+                )}>
+                  {label}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -106,11 +128,23 @@ const BottomNav = () => {
 };
 
 const MainLayout: React.FC = () => {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen pb-24 flex flex-col font-sans selection:bg-green-200">
       <TopHeader />
-      <main className="flex-1 max-w-md mx-auto px-4 pt-4 md:max-w-2xl lg:max-w-4xl w-full animate-page-in">
-        <Outlet />
+      <main className="flex-1 max-w-md mx-auto px-4 pt-4 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
       <BottomNav />
     </div>

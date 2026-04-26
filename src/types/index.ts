@@ -106,3 +106,8 @@ export interface Inventory {
   unit: string;
   lastUpdated: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

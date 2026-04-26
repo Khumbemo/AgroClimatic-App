@@ -6,20 +6,21 @@
 
 @layer base {
   :root {
-    --glass-bg: rgba(255, 255, 255, 0.90);
-    --glass-border: rgba(6, 78, 59, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.05);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(6, 78, 59, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.04);
   }
 
   body {
     font-family: 'Outfit', sans-serif;
-    background-color: #f4f7f5;
+    background-color: #f8faf9;
     background-image: 
-      linear-gradient(rgba(6, 78, 59, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(6, 78, 59, 0.02) 1px, transparent 1px);
+      radial-gradient(circle at 2px 2px, rgba(6, 78, 59, 0.03) 1px, transparent 0);
     background-size: 24px 24px;
     background-attachment: fixed;
     color: #064e3b;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -30,18 +31,18 @@
 
   .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
   
   .glass-pill {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(20, 83, 45, 0.15);
-    box-shadow: 0 10px 40px -10px rgba(20, 83, 45, 0.15);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(20, 83, 45, 0.1);
+    box-shadow: 0 12px 48px -12px rgba(20, 83, 45, 0.12);
   }
 
   .text-gradient {

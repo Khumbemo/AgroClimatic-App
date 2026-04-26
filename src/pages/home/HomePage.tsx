@@ -1,22 +1,43 @@
 import React from 'react';
 import { Activity, Droplets, ThermometerSun, Wind, ChevronRight, Microscope, Target, Fingerprint, TreePine } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1 }
+};
 
 const HomePage = () => {
   return (
-    <div className="space-y-6 pb-8 animate-float" style={{ animationDuration: '10s' }}>
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-6 pb-8"
+    >
       
       {/* Precision Data Readouts */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bento-card border-l-4 border-l-green-600 bg-white/90">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bento-card border-l-4 border-l-green-600 bg-white/90">
           <div className="flex items-center gap-2 mb-3">
             <TreePine className="w-4 h-4 text-green-700" />
             <span className="text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em]">Active Lots</span>
           </div>
           <div className="font-mono-sci text-3xl font-bold text-gray-900 tracking-tight">0012</div>
           <div className="text-[9px] text-gray-400 font-mono-sci mt-1">SYS_STAT: NOMINAL</div>
-        </div>
+        </motion.div>
         
-        <div className="bento-card border-l-4 border-l-emerald-400 bg-emerald-900 text-white relative overflow-hidden">
+        <motion.div variants={item} whileHover={{ y: -4 }} className="bento-card border-l-4 border-l-emerald-400 bg-emerald-900 text-white relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl"></div>
           <div className="flex items-center gap-2 mb-3 relative z-10">
             <Activity className="w-4 h-4 text-emerald-400" />
@@ -26,11 +47,11 @@ const HomePage = () => {
           <div className="text-[9px] text-emerald-500 font-mono-sci mt-1 relative z-10 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> LIVE CALC
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Microclimate Sensor Array */}
-      <div className="bento-card p-0 overflow-hidden border border-gray-200">
+      <motion.div variants={item} className="bento-card p-0 overflow-hidden border border-gray-200">
         <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
           <h3 className="font-black text-gray-800 text-[10px] uppercase tracking-[0.15em] flex items-center gap-2">
             <ThermometerSun className="w-4 h-4 text-amber-600" /> Sensor Array: GHG-01
@@ -50,10 +71,10 @@ const HomePage = () => {
             <span className="text-[8px] text-green-500 font-mono-sci mt-1">RANGE: OPTIMAL</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Anomaly & Diagnostic Feed */}
-      <div className="bento-card">
+      <motion.div variants={item} className="bento-card">
         <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
           <h3 className="font-black text-gray-800 text-[10px] uppercase tracking-[0.15em] flex items-center gap-2">
             <Fingerprint className="w-4 h-4 text-gray-400" /> Diagnostics Log
@@ -75,17 +96,22 @@ const HomePage = () => {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Morphometric Analysis CTA */}
-      <div className="relative overflow-hidden rounded-xl bg-[#1a2f23] p-6 shadow-xl border border-green-900 group cursor-pointer transition-all hover:border-green-500">
+      <motion.div
+        variants={item}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
+        className="relative overflow-hidden rounded-xl bg-[#1a2f23] p-6 shadow-xl border border-green-900 group cursor-pointer transition-all hover:border-green-500"
+      >
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
         <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-400/20 transition-colors duration-500"></div>
         
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
             <Microscope className="w-5 h-5 text-green-400" />
-            <h3 className="font-black text-sm text-green-50 uppercase tracking-[0.15em]">Morphometric Review</h3>
+            <h3 className="font-black text-sm text-green-5 uppercase tracking-[0.15em]">Morphometric Review</h3>
           </div>
           
           <div className="bg-black/30 rounded border border-green-900/50 p-3 mb-4 inline-block">
@@ -104,9 +130,9 @@ const HomePage = () => {
             INITIATE REVIEW <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 };
 
