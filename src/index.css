@@ -11,16 +11,26 @@
     --glass-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.04);
   }
 
+  .dark {
+    --glass-bg: rgba(15, 23, 42, 0.85);
+    --glass-border: rgba(52, 211, 153, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
+
   body {
     font-family: 'Outfit', sans-serif;
-    background-color: #f8faf9;
+    @apply bg-[#f8faf9] text-[#064e3b] dark:bg-[#0f172a] dark:text-emerald-50 transition-colors duration-300;
     background-image: 
       radial-gradient(circle at 2px 2px, rgba(6, 78, 59, 0.03) 1px, transparent 0);
     background-size: 24px 24px;
     background-attachment: fixed;
-    color: #064e3b;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.03) 1px, transparent 0);
   }
 }
 
@@ -30,6 +40,7 @@
   }
 
   .glass-panel {
+    @apply transition-colors duration-300;
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -38,7 +49,7 @@
   }
   
   .glass-pill {
-    background: rgba(255, 255, 255, 0.92);
+    @apply transition-colors duration-300 bg-white dark:bg-slate-900/90;
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(20, 83, 45, 0.1);

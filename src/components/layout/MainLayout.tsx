@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Wrench, Calculator, MessageSquare, Settings, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -53,7 +53,7 @@ const TopHeader = () => {
             </div>
             <div>
               <span className="font-black text-lg text-gray-800 tracking-tight leading-none block">AgroClimatic</span>
-              <span className="text-[8px] text-gray-400 font-mono-sci font-bold uppercase tracking-widest">Lab v1.0</span>
+              <span className="text-[8px] text-gray-400 font-mono-sci font-bold uppercase tracking-widest">Lab v1.2</span>
             </div>
           </div>
           <motion.button
@@ -70,14 +70,15 @@ const TopHeader = () => {
   );
 };
 
+const navItems = [
+  { to: '/', icon: Home, label: 'Home' },
+  { to: '/tools', icon: Wrench, label: 'Tools' },
+  { to: '/calc', icon: Calculator, label: 'Calc' },
+  { to: '/chat', icon: MessageSquare, label: 'Chat' },
+];
+
 const BottomNav = () => {
   const location = useLocation();
-  const navItems = [
-    { to: '/', icon: Home, label: 'Home' },
-    { to: '/tools', icon: Wrench, label: 'Tools' },
-    { to: '/calc', icon: Calculator, label: 'Calc' },
-    { to: '/chat', icon: MessageSquare, label: 'Chat' },
-  ];
 
   const getIsActive = (to: string) => {
     if (to === '/') return location.pathname === '/';
@@ -129,18 +130,48 @@ const BottomNav = () => {
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [direction, setDirection] = useState(0);
+
+  const currentIndex = navItems.findIndex(item => {
+    if (item.to === '/') return location.pathname === '/';
+    return location.pathname.startsWith(item.to);
+  });
+
+  const handleDragEnd = (event: any, info: any) => {
+    // SECURITY: Disable swiping if user is focused on an input or if we're in Chat
+    const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '');
+    if (isInput) return;
+
+    const swipeThreshold = 80; // Increased threshold for intentional swipes
+    if (currentIndex === -1) return;
+
+    if (info.offset.x < -swipeThreshold && currentIndex < navItems.length - 1) {
+      setDirection(1);
+      navigate(navItems[currentIndex + 1].to);
+    } else if (info.offset.x > swipeThreshold && currentIndex > 0) {
+      setDirection(-1);
+      navigate(navItems[currentIndex - 1].to);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-24 flex flex-col font-sans selection:bg-green-200">
       <TopHeader />
       <main className="flex-1 max-w-md mx-auto px-4 pt-4 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
+            custom={direction}
+            initial={{ opacity: 0, x: direction * 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction * -50 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.05} // Lower elasticity to prevent jumpy feeling
+            onDragEnd={handleDragEnd}
+            className="w-full h-full touch-pan-y"
           >
             <Outlet />
           </motion.div>
