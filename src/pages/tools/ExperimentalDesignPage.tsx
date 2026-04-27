@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, FlaskConical, Shuffle, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, X, FlaskConical, Shuffle, EyeOff, Sparkles, Loader2 } from 'lucide-react';
+import { aiService } from '../../services/ai';
 
 type DesignType = 'CRD' | 'RCBD' | 'Latin_Square' | 'Split_Plot';
 interface Experiment {
@@ -15,8 +16,27 @@ const ExperimentalDesignPage = () => {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name:'', designType:'RCBD' as DesignType, blocks:'3', replicates:'4', treatmentInput:'', treatments:[] as string[], blindMode:false });
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => { const s = localStorage.getItem('ac_experiments'); if(s) setExperiments(JSON.parse(s)); }, []);
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsAiLoading(true);
+    const result = await aiService.generateExperimentalDesign(aiPrompt);
+    if (result) {
+      setForm({
+        ...form,
+        name: result.name || form.name,
+        designType: (result.designType as DesignType) || form.designType,
+        blocks: result.blocks?.toString() || form.blocks,
+        replicates: result.replicates?.toString() || form.replicates,
+        treatments: result.treatments || form.treatments
+      });
+    }
+    setIsAiLoading(false);
+  };
 
   const addTreatment = () => { if(!form.treatmentInput.trim()) return; setForm({...form, treatments:[...form.treatments, form.treatmentInput.trim()], treatmentInput:''}); };
   const removeTreatment = (i:number) => setForm({...form, treatments:form.treatments.filter((_,j)=>j!==i)});
@@ -48,6 +68,17 @@ const ExperimentalDesignPage = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-5"><h2 className="font-black text-lg">New Experiment</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
+            
+            <div className="mb-5 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-xl border border-violet-100">
+              <div className="flex items-center gap-2 mb-2 text-violet-700 font-bold text-xs"><Sparkles className="w-4 h-4"/> AI Auto-Generate</div>
+              <div className="flex gap-2">
+                <input type="text" placeholder="e.g. test 3 fertilizers in 4 blocks..." value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} className="flex-1 bg-white border border-violet-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-violet-400" disabled={isAiLoading}/>
+                <button onClick={handleAiGenerate} disabled={isAiLoading||!aiPrompt.trim()} className="bg-violet-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-violet-700 disabled:opacity-50 min-w-[70px] flex justify-center">
+                  {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate'}
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Experiment Name</label><input type="text" placeholder="Fertilizer Response Trial" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
               <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Statistical Design</label>

@@ -1,6 +1,7 @@
-import React from 'react';
-import { Activity, Droplets, ThermometerSun, Wind, ChevronRight, Microscope, Target, Fingerprint, TreePine } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, Droplets, ThermometerSun, Wind, ChevronRight, Microscope, Target, Fingerprint, TreePine, Sparkles, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { aiService } from '../../services/ai';
 
 const container = {
   hidden: { opacity: 0 },
@@ -18,6 +19,36 @@ const item = {
 };
 
 const HomePage = () => {
+  const [logs, setLogs] = useState([
+    { id: "LOG-A71", msg: "Batch #042 Substrate moisture below threshold (30%).", time: "T-02:14:00", aiNote: null as string | null, loading: false },
+    { id: "LOG-A70", msg: "PAR sensor calibration sequence completed.", time: "T-11:00:23", aiNote: null as string | null, loading: false }
+  ]);
+  
+  const [morphStatus, setMorphStatus] = useState<'idle' | 'analyzing' | 'complete'>('idle');
+  const [morphResult, setMorphResult] = useState<any>(null);
+
+  const handleDiagnose = async (index: number) => {
+    const updated = [...logs];
+    updated[index].loading = true;
+    setLogs(updated);
+
+    const suggestion = await aiService.analyzeDiagnostics(logs[index].msg);
+    
+    const finalLogs = [...logs];
+    finalLogs[index].loading = false;
+    finalLogs[index].aiNote = suggestion;
+    setLogs(finalLogs);
+  };
+
+  const handleMorphUpload = async () => {
+    setMorphStatus('analyzing');
+    // Simulate image upload by creating a dummy file
+    const dummyFile = new File([''], 'seedling.jpg', { type: 'image/jpeg' });
+    const result = await aiService.analyzeMorphometrics(dummyFile);
+    setMorphResult(result);
+    setMorphStatus('complete');
+  };
+
   return (
     <motion.div
       variants={container}
@@ -81,10 +112,7 @@ const HomePage = () => {
           </h3>
         </div>
         <div className="space-y-3">
-          {[
-            { id: "LOG-A71", msg: "Batch #042 Substrate moisture below threshold (30%).", time: "T-02:14:00" },
-            { id: "LOG-A70", msg: "PAR sensor calibration sequence completed.", time: "T-11:00:23" }
-          ].map((log, i) => (
+          {logs.map((log, i) => (
             <div key={i} className="flex gap-3 items-start border-l-2 border-amber-400 pl-3 py-1">
               <div className="flex-1">
                 <div className="flex justify-between items-center">
@@ -92,6 +120,24 @@ const HomePage = () => {
                   <p className="font-mono-sci text-[8px] text-gray-400">{log.time}</p>
                 </div>
                 <p className="text-xs text-gray-600 mt-1 leading-relaxed">{log.msg}</p>
+                
+                {log.aiNote && (
+                  <div className="mt-2 bg-gradient-to-r from-emerald-50 to-cyan-50 p-2 rounded border border-emerald-100 flex gap-2">
+                    <Sparkles className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-emerald-800 font-medium leading-tight">{log.aiNote}</p>
+                  </div>
+                )}
+                
+                {!log.aiNote && !log.loading && (
+                  <button onClick={() => handleDiagnose(i)} className="mt-2 text-[9px] font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700">
+                    <Sparkles className="w-3 h-3" /> AI Diagnose
+                  </button>
+                )}
+                {log.loading && (
+                  <div className="mt-2 text-[9px] font-bold text-emerald-600 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Analyzing...
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -123,12 +169,37 @@ const HomePage = () => {
             </p>
           </div>
           
-          <p className="text-gray-300 text-xs font-medium leading-relaxed opacity-90 mb-4">
-            Validation required.
-          </p>
-          <button className="mt-5 w-full bg-green-600/20 border border-green-500/50 text-green-400 px-4 py-2.5 rounded text-[10px] font-mono-sci font-bold uppercase tracking-[0.2em] hover:bg-green-500/30 transition-all flex items-center justify-between group-hover:text-green-300">
-            INITIATE REVIEW <ChevronRight className="w-4 h-4" />
-          </button>
+          {morphStatus === 'idle' && (
+            <>
+              <p className="text-gray-300 text-xs font-medium leading-relaxed opacity-90 mb-4">
+                Upload image for AI Vision analysis.
+              </p>
+              <button onClick={handleMorphUpload} className="mt-5 w-full bg-green-600/20 border border-green-500/50 text-green-400 px-4 py-2.5 rounded text-[10px] font-mono-sci font-bold uppercase tracking-[0.2em] hover:bg-green-500/30 transition-all flex items-center justify-center gap-2 group-hover:text-green-300">
+                <UploadCloud className="w-4 h-4" /> UPLOAD IMAGE
+              </button>
+            </>
+          )}
+
+          {morphStatus === 'analyzing' && (
+            <div className="mt-5 flex items-center justify-center gap-2 text-green-400 bg-green-900/20 border border-green-900 py-2.5 rounded">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-[10px] font-mono-sci font-bold uppercase tracking-widest">Processing Image...</span>
+            </div>
+          )}
+
+          {morphStatus === 'complete' && morphResult && (
+            <div className="mt-4 bg-green-500/10 border border-green-500/30 p-3 rounded backdrop-blur-md">
+              <div className="flex items-center gap-2 mb-2 text-green-400">
+                <CheckCircle2 className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase">Vision Complete</span>
+              </div>
+              <p className="text-[10px] text-green-300 leading-relaxed font-medium mb-2">{morphResult.message}</p>
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-black/40 p-1.5 rounded"><div className="font-mono-sci text-sm font-bold text-white">{morphResult.caliper}mm</div><div className="text-[8px] text-gray-400 uppercase">Caliper</div></div>
+                <div className="bg-black/40 p-1.5 rounded"><div className="font-mono-sci text-sm font-bold text-white">{morphResult.srRatio}</div><div className="text-[8px] text-gray-400 uppercase">S/R Ratio</div></div>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 

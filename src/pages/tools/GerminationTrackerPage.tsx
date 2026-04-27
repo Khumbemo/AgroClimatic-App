@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Sprout, X, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Plus, Sprout, X, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import type { GerminationLog } from '../../types';
+import { aiService } from '../../services/ai';
 
 const GerminationTrackerPage = () => {
   const navigate = useNavigate();
@@ -16,6 +17,17 @@ const GerminationTrackerPage = () => {
     count: '',
     batchId: 'BATCH-001',
   });
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const generateInsight = async () => {
+    if (logs.length === 0) return;
+    setIsAiLoading(true);
+    const summary = `Germination tracking for ${totalSeeds} seeds. Current GP: ${germinationPercentage}%, GRI: ${gri}, MGT: ${mgt} days. Daily logs: ` + logs.map(l => `${l.date}: +${l.count}`).join(', ');
+    const insight = await aiService.analyzeDataInsights(summary);
+    setAiInsight(insight);
+    setIsAiLoading(false);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_germination_logs');
@@ -101,6 +113,29 @@ const GerminationTrackerPage = () => {
           <div className="text-[8px] text-gray-400 font-mono-sci">Σ(Tᵢ·Gᵢ)/ΣGᵢ</div>
         </div>
       </div>
+
+      {/* AI Data Insights */}
+      {logs.length > 0 && (
+        <div className="bento-card p-4 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-black text-teal-800 text-[10px] uppercase tracking-[0.15em] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-teal-500" /> AI Growth Insights
+            </h3>
+            <button onClick={generateInsight} disabled={isAiLoading} className="text-[10px] font-bold bg-teal-600 text-white px-3 py-1.5 rounded flex items-center gap-1 hover:bg-teal-700 disabled:opacity-50">
+              {isAiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
+              {isAiLoading ? 'Analyzing...' : 'Generate Report'}
+            </button>
+          </div>
+          {aiInsight && (
+            <div className="bg-white/60 p-3 rounded-lg border border-teal-100 text-sm text-teal-900 leading-relaxed font-medium shadow-sm">
+              {aiInsight}
+            </div>
+          )}
+          {!aiInsight && !isAiLoading && (
+            <div className="text-xs text-teal-600/70 italic">Click generate for a personalized AI analysis of your current germination curve.</div>
+          )}
+        </div>
+      )}
 
       {/* Form Modal */}
       {showForm && (
