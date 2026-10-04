@@ -17,21 +17,18 @@ const NewBatchPage: React.FC = () => {
     seedLotId: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await addDoc(collection(db, 'nurseryBatches'), {
-        ...formData,
-        seedsSown: parseInt(formData.seedsSown),
-        areaSownM2: parseFloat(formData.areaSownM2),
-        status: 'sown',
-        createdAt: new Date().toISOString(),
-      });
-      navigate('/nursery');
-    } catch (err) {
-      console.error("Error adding batch:", err);
-      navigate('/nursery');
-    }
+    // Don't await the server ack: offline, addDoc never resolves, but the write is
+    // already in the local cache and the batch list's snapshot shows it immediately.
+    addDoc(collection(db, 'nurseryBatches'), {
+      ...formData,
+      seedsSown: parseInt(formData.seedsSown),
+      areaSownM2: parseFloat(formData.areaSownM2),
+      status: 'sown',
+      createdAt: new Date().toISOString(),
+    }).catch(err => console.error("Error adding batch:", err));
+    navigate('/nursery');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

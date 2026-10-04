@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:artifact": "tsc -b && vite build --mode artifact --base ./ --outDir dist-artifact && node scripts/inline-artifact.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.1",
