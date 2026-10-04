@@ -16,11 +16,11 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-green-50 p-6">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 flex flex-col items-center">
-        <div className="bg-green-100 p-4 rounded-2xl mb-6">
+      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm p-8 flex flex-col items-center">
+        <div className="bg-green-100 p-4 rounded-lg mb-6">
           <Sprout className="w-12 h-12 text-green-600" />
         </div>
-        <h1 className="text-2xl font-black text-gray-900 mb-2 text-center tracking-tight">AgroClimatic lab</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2 text-center tracking-tight">AgroClimatic lab</h1>
         <p className="text-gray-500 text-center mb-8 text-sm font-medium leading-relaxed">
           Comprehensive precision forestry management for seed and seedling production.
         </p>
@@ -29,7 +29,7 @@ const LoginPage: React.FC = () => {
             await signInWithGoogle();
             navigate('/');
           }}
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-4 rounded-2xl hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 px-4 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
           Continue with Google

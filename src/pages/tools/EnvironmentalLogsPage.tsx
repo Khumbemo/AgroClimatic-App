@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, ThermometerSun, Droplets, Sun, Wind, X } from 'lucide-react';
 import type { ClimateLog } from '../../types';
 
 const EnvironmentalLogsPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<ClimateLog[]>([]);
+  const [logs, setLogs] = useState<ClimateLog[]>(() => loadJSON('ac_climate_logs', []));
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -18,10 +19,6 @@ const EnvironmentalLogsPage = () => {
     co2: '',
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ac_climate_logs');
-    if (saved) setLogs(JSON.parse(saved));
-  }, []);
 
   const saveLog = () => {
     if (!form.tempMin || !form.tempMax || !form.humidity) return;
@@ -57,62 +54,62 @@ const EnvironmentalLogsPage = () => {
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Environmental Logs</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Environmental Logs</h1>
           
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-2.5 rounded-xl shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform">
+        <button onClick={() => setShowForm(true)} className="bg-green-700 hover:bg-green-800 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
         </button>
       </div>
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">New Climate Entry</h2>
+              <h2 className="font-semibold text-lg text-gray-900">New Climate Entry</h2>
               <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Date (ISO 8601)</label>
-                <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Date (ISO 8601)</label>
+                <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Min (°C)</label>
-                  <input type="number" step="0.1" placeholder="12.5" value={form.tempMin} onChange={e => setForm({...form, tempMin: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">T Min (°C)</label>
+                  <input type="number" step="0.1" placeholder="12.5" value={form.tempMin} onChange={e => setForm({...form, tempMin: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Max (°C)</label>
-                  <input type="number" step="0.1" placeholder="28.3" value={form.tempMax} onChange={e => setForm({...form, tempMax: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">T Max (°C)</label>
+                  <input type="number" step="0.1" placeholder="28.3" value={form.tempMax} onChange={e => setForm({...form, tempMax: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Mean (°C)</label>
-                  <input type="number" step="0.1" placeholder="Auto" value={form.tempMean} onChange={e => setForm({...form, tempMean: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">T Mean (°C)</label>
+                  <input type="number" step="0.1" placeholder="Auto" value={form.tempMean} onChange={e => setForm({...form, tempMean: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RH (%)</label>
-                  <input type="number" step="0.1" placeholder="65.0" value={form.humidity} onChange={e => setForm({...form, humidity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">RH (%)</label>
+                  <input type="number" step="0.1" placeholder="65.0" value={form.humidity} onChange={e => setForm({...form, humidity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">PAR (µmol/m²/s)</label>
-                  <input type="number" step="1" placeholder="450" value={form.lightIntensity} onChange={e => setForm({...form, lightIntensity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">PAR (µmol/m²/s)</label>
+                  <input type="number" step="1" placeholder="450" value={form.lightIntensity} onChange={e => setForm({...form, lightIntensity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Photoperiod (hrs)</label>
-                  <input type="number" step="0.5" placeholder="14" value={form.photoperiod} onChange={e => setForm({...form, photoperiod: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Photoperiod (hrs)</label>
+                  <input type="number" step="0.5" placeholder="14" value={form.photoperiod} onChange={e => setForm({...form, photoperiod: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">CO₂ (ppm)</label>
-                  <input type="number" step="1" placeholder="420" value={form.co2} onChange={e => setForm({...form, co2: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">CO₂ (ppm)</label>
+                  <input type="number" step="1" placeholder="420" value={form.co2} onChange={e => setForm({...form, co2: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
               </div>
-              <button onClick={saveLog} className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all">
+              <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm  hover:shadow-sm transition-all">
                 Record Entry
               </button>
             </div>
@@ -130,9 +127,9 @@ const EnvironmentalLogsPage = () => {
       ) : (
         <div className="space-y-3">
           {logs.map(log => (
-            <div key={log.id} className="bento-card p-4 bg-white/90 border border-gray-200">
+            <div key={log.id} className="bento-card p-4 border border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-mono-sci text-[10px] font-bold text-orange-600">{log.id}</span>
+                <span className="font-mono-sci text-[10px] font-bold text-amber-600">{log.id}</span>
                 <span className="font-mono-sci text-[10px] text-gray-400">{log.date}</span>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">

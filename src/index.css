@@ -1,109 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Greenhouse lab: daylight through glazing onto a bench of instruments.
+  Surfaces are white panels with hairline borders on a pale leaf-tinted ground ruled
+  like graph paper; data is always set in mono with its unit.
+*/
 @layer base {
   :root {
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(6, 78, 59, 0.08);
-    --glass-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.04);
-  }
-
-  .dark {
-    --glass-bg: rgba(15, 23, 42, 0.85);
-    --glass-border: rgba(52, 211, 153, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    --ground: #f5f7f3;     /* gray-50  */
+    --panel: #ffffff;
+    --rule: #dce3d8;       /* gray-200 */
+    --grid: rgba(47, 91, 38, 0.05);
+    --ink: #1a201a;        /* gray-900 */
+    --leaf: #2f5b26;       /* green-700 */
+    color-scheme: light;
   }
 
   body {
-    font-family: 'Outfit', sans-serif;
-    @apply bg-[#f8faf9] text-[#064e3b] dark:bg-[#0f172a] dark:text-emerald-50 transition-colors duration-300;
-    background-image: 
-      radial-gradient(circle at 2px 2px, rgba(6, 78, 59, 0.03) 1px, transparent 0);
-    background-size: 24px 24px;
+    @apply font-sans text-gray-800 antialiased;
+    background-color: var(--ground);
+    /* Glazing grid: 8px minor / 40px major, like greenhouse panes on graph paper */
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
     background-attachment: fixed;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
-  .dark body {
-    background-image:
-      radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.03) 1px, transparent 0);
+  h1, h2, h3 { text-wrap: balance; }
+
+  input, select, textarea { @apply font-sans; }
+
+  :focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 }
 
 @layer utilities {
+  /* Kept as an alias so existing markup picks up the new data face */
   .font-mono-sci {
-    font-family: 'Space Mono', monospace;
+    @apply font-mono;
+    font-variant-numeric: tabular-nums;
   }
 
   .glass-panel {
-    @apply transition-colors duration-300;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: var(--panel);
+    border: 1px solid var(--rule);
   }
-  
+
   .glass-pill {
-    @apply transition-colors duration-300 bg-white dark:bg-slate-900/90;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(20, 83, 45, 0.1);
-    box-shadow: 0 12px 48px -12px rgba(20, 83, 45, 0.12);
+    background: var(--panel);
+    border-top: 1px solid var(--rule);
   }
 
-  .text-gradient {
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* Hide scrollbar for a cleaner look but keep functionality */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @layer components {
-  /* Sharper, more precise card styling */
+  /* Instrument panel: flat white, hairline border, no glow */
   .bento-card {
-    @apply glass-panel rounded-xl p-5 transition-all duration-300 hover:border-green-400 hover:shadow-md hover:shadow-green-900/5;
+    @apply rounded-lg border border-gray-200 bg-white p-5 transition-colors duration-200 hover:border-green-300;
+  }
+
+  /* Small uppercase caption above a reading or section */
+  .sci-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500;
+  }
+
+  .sci-section-title {
+    @apply text-xs font-semibold uppercase tracking-[0.12em] text-gray-600;
   }
 }
 
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0px); }
-}
-
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-}
-
-.animate-float {
-  animation: float 8s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s infinite;
-}
-
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-page-in {
-  animation: page-in 0.3s ease-out forwards;
+  animation: page-in 0.25s ease-out both;
 }

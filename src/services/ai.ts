@@ -70,19 +70,14 @@ export const aiService = {
   async analyzeMorphometrics(imageFile: File) {
      // For a real implementation, you'd convert the File to base64 and use gemini-1.5-flash
      // Since file reading is async, we'll simulate a generic response for this prototype
-     try {
-        const prompt = "Analyze this plant seedling. Estimate the caliper and shoot-to-root ratio. Determine if it passes the target caliper of >4.0mm and S/R ratio of <1.5. Output a brief JSON: { \"caliper\": number, \"srRatio\": number, \"passed\": boolean }";
-        
-        // Simulating the AI response for the UI workflow
-        return {
-           caliper: 4.2,
-           srRatio: 1.3,
-           passed: true,
-           message: "AI Vision analysis complete. The seedling passes morphometric requirements based on estimated dimensions."
-        };
-     } catch (e) {
-       return null;
-     }
+     // Simulated response for the UI workflow (no image is analysed yet). A real version would
+     // prompt for caliper and shoot:root estimates against the >4.0 mm and <1.5 targets.
+     return {
+        caliper: 4.2,
+        srRatio: 1.3,
+        passed: true,
+        message: `Simulated result for ${imageFile.name}: estimated dimensions meet the morphometric targets.`
+     };
   },
 
   /**

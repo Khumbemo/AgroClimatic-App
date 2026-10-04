@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, FlaskConical, Shuffle, EyeOff, Sparkles, Loader2 } from 'lucide-react';
 import { aiService } from '../../services/ai';
@@ -13,13 +14,12 @@ const designLabels: Record<DesignType, string> = { CRD:'Completely Randomized De
 
 const ExperimentalDesignPage = () => {
   const navigate = useNavigate();
-  const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [experiments, setExperiments] = useState<Experiment[]>(() => loadJSON('ac_experiments', []));
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name:'', designType:'RCBD' as DesignType, blocks:'3', replicates:'4', treatmentInput:'', treatments:[] as string[], blindMode:false });
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  useEffect(() => { const s = localStorage.getItem('ac_experiments'); if(s) setExperiments(JSON.parse(s)); }, []);
 
   const handleAiGenerate = async () => {
     if (!aiPrompt.trim()) return;
@@ -60,42 +60,42 @@ const ExperimentalDesignPage = () => {
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Experimental Design</h1></div>
-        <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-violet-500 to-purple-600 text-white p-2.5 rounded-xl shadow-lg shadow-violet-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
+        <div className="flex-1"><h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Experimental Design</h1></div>
+        <button onClick={()=>setShowForm(true)} className="bg-green-700 hover:bg-green-800 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-black text-lg">New Experiment</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
+            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">New Experiment</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
             
-            <div className="mb-5 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-xl border border-violet-100">
-              <div className="flex items-center gap-2 mb-2 text-violet-700 font-bold text-xs"><Sparkles className="w-4 h-4"/> AI Auto-Generate</div>
+            <div className="mb-5 bg-green-50 p-3 rounded-xl border border-green-100">
+              <div className="flex items-center gap-2 mb-2 text-green-700 font-bold text-xs"><Sparkles className="w-4 h-4"/> AI Auto-Generate</div>
               <div className="flex gap-2">
-                <input type="text" placeholder="e.g. test 3 fertilizers in 4 blocks..." value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} className="flex-1 bg-white border border-violet-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-violet-400" disabled={isAiLoading}/>
-                <button onClick={handleAiGenerate} disabled={isAiLoading||!aiPrompt.trim()} className="bg-violet-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-violet-700 disabled:opacity-50 min-w-[70px] flex justify-center">
+                <input type="text" placeholder="e.g. test 3 fertilizers in 4 blocks..." value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} className="flex-1 bg-white border border-green-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-green-400" disabled={isAiLoading}/>
+                <button onClick={handleAiGenerate} disabled={isAiLoading||!aiPrompt.trim()} className="bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-700 disabled:opacity-50 min-w-[70px] flex justify-center">
                   {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate'}
                 </button>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Experiment Name</label><input type="text" placeholder="Fertilizer Response Trial" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Statistical Design</label>
-                <select value={form.designType} onChange={e=>setForm({...form,designType:e.target.value as DesignType})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none">{Object.entries(designLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
+              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Experiment Name</label><input type="text" placeholder="Fertilizer Response Trial" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none"/></div>
+              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Statistical Design</label>
+                <select value={form.designType} onChange={e=>setForm({...form,designType:e.target.value as DesignType})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none">{Object.entries(designLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Blocks</label><input type="number" value={form.blocks} onChange={e=>setForm({...form,blocks:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Reps / Block</label><input type="number" value={form.replicates} onChange={e=>setForm({...form,replicates:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Blocks</label><input type="number" value={form.blocks} onChange={e=>setForm({...form,blocks:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none"/></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Reps / Block</label><input type="number" value={form.replicates} onChange={e=>setForm({...form,replicates:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none"/></div>
               </div>
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Treatments</label>
-                <div className="flex gap-2 mt-1"><input type="text" placeholder="e.g. NPK 20-20-20" value={form.treatmentInput} onChange={e=>setForm({...form,treatmentInput:e.target.value})} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addTreatment();}}} className="flex-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/><button onClick={addTreatment} className="px-4 bg-violet-100 text-violet-700 rounded-xl font-black text-xs">Add</button></div>
-                <div className="flex flex-wrap gap-2 mt-2">{form.treatments.map((t,i)=>(<span key={i} className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 px-3 py-1 rounded-full text-[10px] font-bold border border-violet-200">TRT-{String.fromCharCode(65+i)}: {t}<button onClick={()=>removeTreatment(i)}><X className="w-3 h-3"/></button></span>))}</div>
+              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Treatments</label>
+                <div className="flex gap-2 mt-1"><input type="text" placeholder="e.g. NPK 20-20-20" value={form.treatmentInput} onChange={e=>setForm({...form,treatmentInput:e.target.value})} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addTreatment();}}} className="flex-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none"/><button onClick={addTreatment} className="px-4 bg-green-100 text-green-700 rounded-xl font-semibold text-xs">Add</button></div>
+                <div className="flex flex-wrap gap-2 mt-2">{form.treatments.map((t,i)=>(<span key={i} className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold border border-green-200">TRT-{String.fromCharCode(65+i)}: {t}<button onClick={()=>removeTreatment(i)}><X className="w-3 h-3"/></button></span>))}</div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <EyeOff className="w-5 h-5 text-gray-400"/><div className="flex-1"><p className="text-sm font-bold">Blind Testing Mode</p><p className="text-[10px] text-gray-500">Hide treatment names from collectors</p></div>
-                <button onClick={()=>setForm({...form,blindMode:!form.blindMode})} className={`w-12 h-6 rounded-full transition-colors ${form.blindMode?'bg-violet-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.blindMode?'translate-x-6':'translate-x-0.5'}`}/></button>
+                <button onClick={()=>setForm({...form,blindMode:!form.blindMode})} className={`w-12 h-6 rounded-full transition-colors ${form.blindMode?'bg-green-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.blindMode?'translate-x-6':'translate-x-0.5'}`}/></button>
               </div>
-              <button onClick={saveExperiment} className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Create & Randomize</button>
+              <button onClick={saveExperiment} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Create & Randomize</button>
             </div>
           </div>
         </div>
@@ -104,18 +104,18 @@ const ExperimentalDesignPage = () => {
       {experiments.length===0 ? (
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><FlaskConical className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No experiments configured.</p></div>
       ) : experiments.map(exp=>(
-        <div key={exp.id} className="bento-card p-4 bg-white/90 border border-gray-200 space-y-4">
-          <div><span className="font-mono-sci text-[10px] font-bold text-violet-600">{exp.id}</span><h3 className="font-black text-lg text-gray-900 mt-1">{exp.name}</h3>
-            <div className="flex gap-2 mt-1"><span className="text-[9px] bg-violet-50 text-violet-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-violet-100">{designLabels[exp.designType]}</span>{exp.blindMode && <span className="text-[9px] bg-amber-50 text-amber-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1"><EyeOff className="w-3 h-3"/> BLIND</span>}</div>
+        <div key={exp.id} className="bento-card p-4 border border-gray-200 space-y-4">
+          <div><span className="font-mono-sci text-[10px] font-bold text-green-600">{exp.id}</span><h3 className="font-semibold text-lg text-gray-900 mt-1">{exp.name}</h3>
+            <div className="flex gap-2 mt-1"><span className="text-[9px] bg-green-50 text-green-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-green-100">{designLabels[exp.designType]}</span>{exp.blindMode && <span className="text-[9px] bg-amber-50 text-amber-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1"><EyeOff className="w-3 h-3"/> BLIND</span>}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.blocks}</div><div className="text-[8px] text-gray-400 uppercase">Blocks</div></div>
             <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.treatments.length}</div><div className="text-[8px] text-gray-400 uppercase">Treatments</div></div>
             <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.replicates}</div><div className="text-[8px] text-gray-400 uppercase">Reps</div></div>
           </div>
-          <div><h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1"><Shuffle className="w-3 h-3"/> Randomized Assignment</h4>
+          <div><h4 className="text-[9px] font-semibold text-gray-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1"><Shuffle className="w-3 h-3"/> Randomized Assignment</h4>
             <table className="w-full text-[10px] font-mono-sci"><thead><tr className="border-b border-gray-200"><th className="py-1 px-2 text-left text-gray-400">Block</th><th className="py-1 px-2 text-left text-gray-400">Pos</th><th className="py-1 px-2 text-left text-gray-400">Code</th>{!exp.blindMode&&<th className="py-1 px-2 text-left text-gray-400">Treatment</th>}</tr></thead>
-              <tbody>{exp.assignments.map((a,i)=>(<tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="py-1.5 px-2 font-bold">{a.block}</td><td className="py-1.5 px-2">{a.position}</td><td className="py-1.5 px-2 text-violet-600 font-bold">{a.code}</td>{!exp.blindMode&&<td className="py-1.5 px-2 text-gray-600">{a.treatment}</td>}</tr>))}</tbody></table>
+              <tbody>{exp.assignments.map((a,i)=>(<tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="py-1.5 px-2 font-bold">{a.block}</td><td className="py-1.5 px-2">{a.position}</td><td className="py-1.5 px-2 text-green-600 font-bold">{a.code}</td>{!exp.blindMode&&<td className="py-1.5 px-2 text-gray-600">{a.treatment}</td>}</tr>))}</tbody></table>
           </div>
           <div className="text-[8px] text-gray-400 font-mono-sci border-t border-gray-100 pt-2">{exp.createdBy} · {exp.createdAt}</div>
         </div>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Map, Plus, X, Grid3x3 } from 'lucide-react';
 
@@ -20,10 +21,10 @@ interface GreenhouseLayout {
 const statusColors: Record<BenchCell['status'], string> = {
   empty: 'bg-gray-100 border-gray-200 text-gray-400',
   sown: 'bg-amber-50 border-amber-300 text-amber-700',
-  germinating: 'bg-lime-50 border-lime-300 text-lime-700',
+  germinating: 'bg-green-50 border-green-300 text-green-700',
   growing: 'bg-green-50 border-green-400 text-green-700',
   hardening: 'bg-blue-50 border-blue-300 text-blue-700',
-  ready: 'bg-emerald-100 border-emerald-500 text-emerald-800',
+  ready: 'bg-green-100 border-green-500 text-green-800',
 };
 
 const statusLabels: Record<BenchCell['status'], string> = {
@@ -32,21 +33,13 @@ const statusLabels: Record<BenchCell['status'], string> = {
 
 const SpatialMappingPage = () => {
   const navigate = useNavigate();
-  const [layouts, setLayouts] = useState<GreenhouseLayout[]>([]);
+  const [layouts, setLayouts] = useState<GreenhouseLayout[]>(() => loadJSON('ac_spatial_layouts', []));
   const [showNewForm, setShowNewForm] = useState(false);
-  const [selectedLayout, setSelectedLayout] = useState<string | null>(null);
+  const [selectedLayout, setSelectedLayout] = useState<string | null>(() => loadJSON<GreenhouseLayout[]>('ac_spatial_layouts', [])[0]?.id ?? null);
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const [cellForm, setCellForm] = useState({ batchId: '', species: '', status: 'empty' as BenchCell['status'] });
   const [newForm, setNewForm] = useState({ name: '', rows: '4', cols: '6' });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ac_spatial_layouts');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setLayouts(parsed);
-      if (parsed.length > 0) setSelectedLayout(parsed[0].id);
-    }
-  }, []);
 
   const saveLayouts = (updated: GreenhouseLayout[]) => {
     setLayouts(updated);
@@ -98,10 +91,10 @@ const SpatialMappingPage = () => {
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Spatial Mapping</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Spatial Mapping</h1>
           
         </div>
-        <button onClick={() => setShowNewForm(true)} className="bg-gradient-to-r from-rose-500 to-red-600 text-white p-2.5 rounded-xl shadow-lg shadow-rose-500/30 hover:scale-105 transition-transform">
+        <button onClick={() => setShowNewForm(true)} className="bg-red-600 hover:bg-red-700 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
         </button>
       </div>
@@ -110,7 +103,7 @@ const SpatialMappingPage = () => {
       {layouts.length > 0 && (
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {layouts.map(l => (
-            <button key={l.id} onClick={() => setSelectedLayout(l.id)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${selectedLayout === l.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
+            <button key={l.id} onClick={() => setSelectedLayout(l.id)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all border ${selectedLayout === l.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
               {l.name}
             </button>
           ))}
@@ -119,19 +112,19 @@ const SpatialMappingPage = () => {
 
       {/* New Layout Form */}
       {showNewForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-sm">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">New Greenhouse Layout</h2>
+              <h2 className="font-semibold text-lg text-gray-900">New Greenhouse Layout</h2>
               <button onClick={() => setShowNewForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Greenhouse Name</label><input type="text" placeholder="Greenhouse Alpha" value={newForm.name} onChange={e => setNewForm({...newForm, name: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none" /></div>
+              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Greenhouse Name</label><input type="text" placeholder="Greenhouse Alpha" value={newForm.name} onChange={e => setNewForm({...newForm, name: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Rows (Benches)</label><input type="number" value={newForm.rows} onChange={e => setNewForm({...newForm, rows: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none" /></div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Columns (Positions)</label><input type="number" value={newForm.cols} onChange={e => setNewForm({...newForm, cols: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none" /></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Rows (Benches)</label><input type="number" value={newForm.rows} onChange={e => setNewForm({...newForm, rows: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none" /></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Columns (Positions)</label><input type="number" value={newForm.cols} onChange={e => setNewForm({...newForm, cols: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none" /></div>
               </div>
-              <button onClick={createLayout} className="w-full bg-gradient-to-r from-rose-500 to-red-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Create Layout</button>
+              <button onClick={createLayout} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Create Layout</button>
             </div>
           </div>
         </div>
@@ -139,25 +132,25 @@ const SpatialMappingPage = () => {
 
       {/* Cell Edit Modal */}
       {editingCell && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-sm">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">Position [{editingCell.row + 1}, {editingCell.col + 1}]</h2>
+              <h2 className="font-semibold text-lg text-gray-900">Position [{editingCell.row + 1}, {editingCell.col + 1}]</h2>
               <button onClick={() => setEditingCell(null)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</label>
-                <select value={cellForm.status} onChange={e => setCellForm({...cellForm, status: e.target.value as BenchCell['status']})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none">
+              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Status</label>
+                <select value={cellForm.status} onChange={e => setCellForm({...cellForm, status: e.target.value as BenchCell['status']})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none">
                   {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               {cellForm.status !== 'empty' && (
                 <>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Batch ID</label><input type="text" placeholder="BATCH-001" value={cellForm.batchId} onChange={e => setCellForm({...cellForm, batchId: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Species</label><input type="text" placeholder="Pinus patula" value={cellForm.species} onChange={e => setCellForm({...cellForm, species: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-rose-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch ID</label><input type="text" placeholder="BATCH-001" value={cellForm.batchId} onChange={e => setCellForm({...cellForm, batchId: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Species</label><input type="text" placeholder="Pinus patula" value={cellForm.species} onChange={e => setCellForm({...cellForm, species: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-red-400 outline-none" /></div>
                 </>
               )}
-              <button onClick={updateCell} className="w-full bg-gradient-to-r from-rose-500 to-red-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Update Position</button>
+              <button onClick={updateCell} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Update Position</button>
             </div>
           </div>
         </div>
@@ -165,9 +158,9 @@ const SpatialMappingPage = () => {
 
       {/* Grid Visualization */}
       {current ? (
-        <div className="bento-card p-4 bg-white/90 border border-gray-200 overflow-x-auto">
+        <div className="bento-card p-4 border border-gray-200 overflow-x-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em] flex items-center gap-2">
+            <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] flex items-center gap-2">
               <Grid3x3 className="w-3.5 h-3.5" /> {current.name} · {current.rows}×{current.cols}
             </h3>
             <span className="font-mono-sci text-[9px] text-gray-400">{current.id}</span>

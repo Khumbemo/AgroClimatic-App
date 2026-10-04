@@ -9,20 +9,18 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
+const IS_DEMO = !import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key';
+const DEMO_USER = { uid: 'demo-user', email: 'demo@forestry.org', displayName: 'Nursery Manager' } as User;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Demo mode (no real Firebase keys) skips the auth listener and auto-logs in for UI testing
+  const [user, setUser] = useState<User | null>(IS_DEMO ? DEMO_USER : null);
+  const [loading, setLoading] = useState(!IS_DEMO);
 
   useEffect(() => {
-    // Bypass Firebase auth listener if running in demo mode without real API keys
-    if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key') {
-      setLoading(false);
-      // Auto-login for convenience during UI testing
-      setUser({ uid: 'demo-user', email: 'demo@forestry.org', displayName: 'Nursery Manager' } as User);
-      return () => {};
-    }
+    if (IS_DEMO) return;
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -33,11 +31,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     console.log("Signing in with Google placeholder - Auto-logging in for demo");
-    setUser({ uid: 'demo-user', email: 'demo@forestry.org', displayName: 'Nursery Manager' } as User);
+    setUser(DEMO_USER);
   };
 
   const logout = async () => {
-    if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key') {
+    if (IS_DEMO) {
       setUser(null);
       return;
     }
@@ -51,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');

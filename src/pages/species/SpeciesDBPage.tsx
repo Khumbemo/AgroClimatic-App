@@ -1,43 +1,61 @@
-import React from 'react';
-import { Search, Database, ChevronRight, Map } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, ChevronRight, TreePine } from 'lucide-react';
+
+type Storage = 'Orthodox' | 'Sub-orthodox' | 'Recalcitrant';
+
+const species: { id: string; name: string; common: string; family: string; storage: Storage }[] = [
+  { id: '1', name: 'Pinus roxburghii', common: 'Chir pine', family: 'Pinaceae', storage: 'Orthodox' },
+  // Short-lived at ambient, but stores >650 days at 10 % moisture and −5 °C (sub-orthodox)
+  { id: '2', name: 'Cedrus deodara', common: 'Deodar cedar', family: 'Pinaceae', storage: 'Sub-orthodox' },
+  { id: '3', name: 'Abies pindrow', common: 'Pindrow fir', family: 'Pinaceae', storage: 'Orthodox' },
+];
+
+const storageChip: Record<Storage, string> = {
+  Orthodox: 'text-green-800 bg-green-50 border-green-200',
+  'Sub-orthodox': 'text-amber-800 bg-amber-50 border-amber-200',
+  Recalcitrant: 'text-red-700 bg-red-50 border-red-200',
+};
 
 const SpeciesDBPage: React.FC = () => {
-  const species = [
-    { id: '1', name: 'Pinus roxburghii', common: 'Chir Pine', family: 'Pinaceae', type: 'Orthodox' },
-    { id: '2', name: 'Cedrus deodara', common: 'Deodar Cedar', family: 'Pinaceae', type: 'Recalcitrant' },
-    { id: '3', name: 'Abies pindrow', common: 'Pindrow Fir', family: 'Pinaceae', type: 'Orthodox' },
-  ];
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const shown = species.filter(sp => !q || [sp.name, sp.common, sp.family].some(v => v.toLowerCase().includes(q)));
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Species DB</h1>
-        <button className="bg-green-600 text-white p-3 rounded-2xl shadow-lg active:scale-90 transition-all">
-          <Map className="w-5 h-5" />
-        </button>
+    <div className="space-y-5 pb-8 animate-page-in">
+      <header>
+        <h1 className="text-2xl font-semibold text-gray-900">Species database</h1>
+        <p className="text-sm text-gray-500 mt-1">Taxonomy and seed storage behaviour.</p>
+      </header>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <label htmlFor="species-search" className="sr-only">Search species</label>
+        <input
+          id="species-search"
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search by binomial, common name or family"
+          className="w-full bg-white border border-gray-300 rounded-md py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 placeholder:text-gray-400"
+        />
       </div>
 
-      <div className="relative group">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-green-600 transition-colors" />
-        <input type="text" placeholder="Search species database..." className="w-full bg-white border border-gray-100 rounded-3xl py-5 pl-14 pr-6 shadow-sm focus:outline-none focus:ring-4 focus:ring-green-100 transition-all text-sm font-bold placeholder:text-gray-300" />
-      </div>
-
-      <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-        {species.map((sp) => (
-          <div key={sp.id} className="p-7 flex items-center gap-5 hover:bg-gray-50/50 transition-all active:scale-[0.98]">
-            <div className="bg-green-50 p-4 rounded-3xl group-active:scale-90 transition-transform">
-              <Database className="w-7 h-7 text-green-600" />
+      <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+        {shown.map(sp => (
+          <div key={sp.id} className="px-4 py-3 flex items-center gap-3 hover:bg-green-50 transition-colors">
+            <div className="w-9 h-9 rounded-md bg-green-50 border border-green-100 flex items-center justify-center shrink-0">
+              <TreePine className="w-[18px] h-[18px] text-green-700" strokeWidth={1.8} />
             </div>
-            <div className="flex-1">
-              <h3 className="font-black text-gray-900 text-lg italic tracking-tight leading-tight">{sp.name}</h3>
-              <p className="text-[11px] text-gray-400 font-bold mt-1 uppercase tracking-widest">{sp.common} • {sp.family}</p>
-              <span className="inline-block mt-3 px-3 py-1.5 bg-gray-100 rounded-xl text-[9px] font-black text-gray-500 uppercase tracking-widest border border-gray-200/50">
-                {sp.type}
-              </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[15px] font-medium text-gray-900 italic">{sp.name}</h3>
+              <p className="text-xs text-gray-500">{sp.common} · {sp.family}</p>
             </div>
-            <ChevronRight className="w-6 h-6 text-gray-200" />
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded border shrink-0 ${storageChip[sp.storage]}`}>{sp.storage}</span>
+            <ChevronRight className="w-4 h-4 text-gray-300" />
           </div>
         ))}
+        {shown.length === 0 && <p className="px-4 py-6 text-sm text-gray-500 text-center">No species match “{query}”.</p>}
       </div>
     </div>
   );

@@ -1,7 +1,44 @@
-import React, { useState } from 'react';
-import { Calculator, Beaker, Zap, BarChart, ChevronRight, ArrowLeft, Plus, X } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Beaker, Wind, BarChart3, ChevronRight, ArrowLeft, Plus, X } from 'lucide-react';
+import { calculateVPD, getVpdBand } from '../../utils/calculations';
+import VpdScale from '../../components/sci/VpdScale';
+import { vpdToneChip } from '../../components/sci/vpdTone';
 
 type CalcType = 'VPD' | 'GRI' | 'PPM' | null;
+
+const inputCls = 'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg-white font-mono-sci text-base text-gray-900 focus:border-green-600 focus:ring-2 focus:ring-green-100 outline-none transition-colors';
+
+const Field = ({ id, label, unit, value, onChange, step, placeholder }: { id: string; label: string; unit: string; value: string; onChange: (v: string) => void; step: string; placeholder: string }) => (
+  <div>
+    <label htmlFor={id} className="sci-label">{label} <span className="normal-case tracking-normal font-mono-sci text-gray-400">({unit})</span></label>
+    <input id={id} type="number" step={step} value={value} onChange={e => onChange(e.target.value)} className={inputCls} placeholder={placeholder} />
+  </div>
+);
+
+const CalcHeader = ({ title, method, onBack }: { title: string; method: string; onBack: () => void }) => (
+  <div className="flex items-center gap-3">
+    <button onClick={onBack} aria-label="Back to calculators" className="p-2 -ml-2 rounded-md text-gray-500 hover:bg-green-50 hover:text-green-700"><ArrowLeft className="w-5 h-5" /></button>
+    <div>
+      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+      <p className="text-xs text-gray-500 mt-0.5">{method}</p>
+    </div>
+  </div>
+);
+
+const Result = ({ label, value, unit, children }: { label: string; value: string; unit?: string; children?: ReactNode }) => (
+  <div className="pt-4 border-t border-gray-200">
+    <p className="sci-label">{label}</p>
+    <div className="mt-1 flex items-baseline gap-1.5">
+      <span className="font-mono-sci text-4xl font-medium text-gray-900">{value}</span>
+      {unit && <span className="font-mono-sci text-sm text-gray-500">{unit}</span>}
+    </div>
+    {children}
+  </div>
+);
+
+const Formula = ({ children }: { children: ReactNode }) => (
+  <p className="font-mono-sci text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2 break-words">{children}</p>
+);
 
 const CalcPage = () => {
   const [activeCalc, setActiveCalc] = useState<CalcType>(null);
@@ -18,30 +55,12 @@ const CalcPage = () => {
   const [ppmVolume, setPpmVolume] = useState('');
   const [ppmElement, setPpmElement] = useState('');
 
-  // ----------------------------------------------------------------------
-  // VPD Calculation (Tetens Equation)
-  // ----------------------------------------------------------------------
-  const getVpd = () => {
-    const t = parseFloat(vpdTemp);
-    const rh = parseFloat(vpdRH);
-    if (isNaN(t) || isNaN(rh)) return null;
-    const svp = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
-    const vpd = svp * (1 - rh / 100);
-    return vpd.toFixed(2);
-  };
-  const vpdResult = getVpd();
-  
-  const getVpdStatus = (val: number) => {
-    if (val < 0.4) return { text: 'DANGER: Low Transpiration', color: 'text-blue-600 bg-blue-50 border-blue-200' };
-    if (val >= 0.4 && val < 0.8) return { text: 'Low / Propagating', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
-    if (val >= 0.8 && val <= 1.2) return { text: 'OPTIMAL VEGETATIVE', color: 'text-green-600 bg-green-50 border-green-300' };
-    if (val > 1.2 && val <= 1.6) return { text: 'High Transpiration', color: 'text-amber-600 bg-amber-50 border-amber-200' };
-    return { text: 'DANGER: Stress / Closure', color: 'text-red-600 bg-red-50 border-red-200' };
-  };
+  // VPD (Tetens equation)
+  const t = parseFloat(vpdTemp);
+  const rh = parseFloat(vpdRH);
+  const vpdValue = isNaN(t) || isNaN(rh) ? null : calculateVPD(t, rh);
 
-  // ----------------------------------------------------------------------
-  // GRI Calculation (ISTA Standard)
-  // ----------------------------------------------------------------------
+  // Germination speed: sum of new germinants divided by days since sowing
   const getGri = () => {
     let sum = 0;
     for (const item of griCounts) {
@@ -56,52 +75,41 @@ const CalcPage = () => {
     setGriCounts([...griCounts, { day: nextDay.toString(), count: '0' }]);
   };
 
-  // ----------------------------------------------------------------------
-  // Fertilizer PPM Calculation
-  // ----------------------------------------------------------------------
+  // Fertilizer dry mass: g = ppm × L / (element % × 10)
   const getPpmMass = () => {
     const ppm = parseFloat(ppmTarget);
     const v = parseFloat(ppmVolume);
     const e = parseFloat(ppmElement);
     if (isNaN(ppm) || isNaN(v) || isNaN(e) || e <= 0) return null;
-    const mass = (ppm * v) / (e * 10);
-    return mass.toFixed(2);
+    return ((ppm * v) / (e * 10)).toFixed(2);
   };
   const ppmResult = getPpmMass();
 
   const calculators = [
-    { id: 'VPD' as const, title: 'Vapor Pressure Deficit', icon: Zap, desc: 'Calculate VPD from Temp & RH', color: 'from-purple-400 to-indigo-600', shadow: 'shadow-purple-500/20', text: 'text-purple-700' },
-    { id: 'GRI' as const, title: 'Germination Rate Index', icon: BarChart, desc: 'Calculate GRI from sprout logs', color: 'from-emerald-400 to-teal-600', shadow: 'shadow-emerald-500/20', text: 'text-emerald-700' },
-    { id: 'PPM' as const, title: 'Fertilizer PPM Dosing', icon: Beaker, desc: 'Mix ratios for nutrient dosing', color: 'from-blue-400 to-cyan-600', shadow: 'shadow-blue-500/20', text: 'text-blue-700' },
+    { id: 'VPD' as const, title: 'Vapour Pressure Deficit', icon: Wind, desc: 'From air temperature and relative humidity', unit: 'kPa' },
+    { id: 'GRI' as const, title: 'Germination Speed Index', icon: BarChart3, desc: 'From daily counts of new germinants', unit: 'seeds d⁻¹' },
+    { id: 'PPM' as const, title: 'Fertilizer Dosing', icon: Beaker, desc: 'Dry mass for a target ppm in solution', unit: 'g' },
   ];
 
   if (activeCalc === 'VPD') {
+    const band = vpdValue !== null ? getVpdBand(vpdValue) : null;
     return (
-      <div className="space-y-6 pb-8 animate-page-in">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setActiveCalc(null)} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600" /></button>
-          <div><h1 className="text-xl font-black text-gray-900 tracking-tight">VPD Calculator</h1><p className="text-[10px] text-gray-500 font-mono-sci mt-0.5 uppercase">Tetens Equation (kPa)</p></div>
-        </div>
-        
-        <div className="bento-card p-6 bg-white space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Temperature (°C)</label><input type="number" step="0.1" value={vpdTemp} onChange={e => setVpdTemp(e.target.value)} className="w-full mt-1.5 p-3.5 rounded-xl border-2 border-gray-100 font-mono-sci text-lg focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all" placeholder="25.0" /></div>
-            <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Humidity (%)</label><input type="number" step="1" value={vpdRH} onChange={e => setVpdRH(e.target.value)} className="w-full mt-1.5 p-3.5 rounded-xl border-2 border-gray-100 font-mono-sci text-lg focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all" placeholder="60" /></div>
+      <div className="space-y-5 pb-8 animate-page-in">
+        <CalcHeader title="VPD calculator" method="Tetens equation for saturation vapour pressure" onBack={() => setActiveCalc(null)} />
+        <div className="bento-card space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field id="vpd-temp" label="Air temp" unit="°C" step="0.1" placeholder="25.0" value={vpdTemp} onChange={setVpdTemp} />
+            <Field id="vpd-rh" label="Rel. humidity" unit="%" step="1" placeholder="60" value={vpdRH} onChange={setVpdRH} />
           </div>
-          
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2 text-center">Calculated VPD</p>
-            <div className="text-center font-mono-sci text-5xl font-black text-purple-700 tracking-tighter">
-              {vpdResult ? vpdResult : '0.00'} <span className="text-lg text-purple-300 font-bold tracking-normal uppercase">kPa</span>
-            </div>
-            {vpdResult && (
-              <div className="mt-4 flex justify-center">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${getVpdStatus(parseFloat(vpdResult)).color}`}>
-                  {getVpdStatus(parseFloat(vpdResult)).text}
-                </span>
+          <Result label="Calculated VPD" value={vpdValue !== null ? vpdValue.toFixed(2) : '–'} unit="kPa">
+            {band && vpdValue !== null && (
+              <div className="mt-3 space-y-3">
+                <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded border ${vpdToneChip[band.tone]}`}>{band.label}</span>
+                <VpdScale value={vpdValue} />
               </div>
             )}
-          </div>
+          </Result>
+          <Formula>VPD = 0.61078·e^(17.27T / (T + 237.3)) × (1 − RH/100)</Formula>
         </div>
       </div>
     );
@@ -109,88 +117,74 @@ const CalcPage = () => {
 
   if (activeCalc === 'GRI') {
     return (
-      <div className="space-y-6 pb-8 animate-page-in">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setActiveCalc(null)} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600" /></button>
-          <div><h1 className="text-xl font-black text-gray-900 tracking-tight">GRI Calculator</h1><p className="text-[10px] text-gray-500 font-mono-sci mt-0.5 uppercase">ISTA Germination Rate Index</p></div>
+      <div className="space-y-5 pb-8 animate-page-in">
+        <CalcHeader title="Germination speed" method="Maguire (1962) speed of germination index" onBack={() => setActiveCalc(null)} />
+
+        <div className="bento-card space-y-3">
+          <Result label="Speed index" value={getGri()} unit="seeds d⁻¹" />
+          <Formula>GSI = Σ (Gᵢ / tᵢ) · Gᵢ new germinants on day tᵢ</Formula>
         </div>
 
-        <div className="bento-card p-6 bg-white border-b-4 border-b-emerald-500">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2 text-center">Calculated Index</p>
-          <div className="text-center font-mono-sci text-5xl font-black text-emerald-600 tracking-tighter">
-            {getGri()}
+        <section>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="sci-section-title">Daily emergence counts</h2>
+            <button onClick={addGriRow} className="text-xs font-medium text-green-700 flex items-center gap-1 hover:text-green-900"><Plus className="w-3.5 h-3.5" /> Add day</button>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-end mb-2 px-1">
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Daily Emergence Logs</label>
-            <button onClick={addGriRow} className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1 hover:text-emerald-700"><Plus className="w-3 h-3" /> Add Day</button>
-          </div>
-          {griCounts.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-              <div className="w-20"><label className="text-[8px] font-bold text-gray-400 uppercase px-1">Day</label><input type="number" value={item.day} onChange={e => { const n = [...griCounts]; n[idx].day = e.target.value; setGriCounts(n); }} className="w-full p-2 bg-gray-50 rounded-lg font-mono-sci text-sm outline-none border border-transparent focus:border-emerald-300" /></div>
-              <div className="flex-1"><label className="text-[8px] font-bold text-gray-400 uppercase px-1">New Germinants</label><input type="number" value={item.count} onChange={e => { const n = [...griCounts]; n[idx].count = e.target.value; setGriCounts(n); }} className="w-full p-2 bg-gray-50 rounded-lg font-mono-sci text-sm outline-none border border-transparent focus:border-emerald-300" /></div>
-              <button onClick={() => setGriCounts(griCounts.filter((_, i) => i !== idx))} className="mt-4 p-2 text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-[5rem_1fr_2.5rem] px-3 py-2 bg-gray-50 border-b border-gray-200 sci-label">
+              <span>Day tᵢ</span><span>New germinants Gᵢ</span><span />
             </div>
-          ))}
-        </div>
+            {griCounts.map((item, idx) => (
+              <div key={idx} className="grid grid-cols-[5rem_1fr_2.5rem] items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-b-0">
+                <input aria-label={`Day for row ${idx + 1}`} type="number" value={item.day} onChange={e => { const n = [...griCounts]; n[idx].day = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
+                <input aria-label={`Germinants for row ${idx + 1}`} type="number" value={item.count} onChange={e => { const n = [...griCounts]; n[idx].count = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
+                <button aria-label={`Remove row ${idx + 1}`} onClick={() => setGriCounts(griCounts.filter((_, i) => i !== idx))} className="p-1.5 text-gray-400 hover:text-red-600 justify-self-end"><X className="w-4 h-4" /></button>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
 
   if (activeCalc === 'PPM') {
     return (
-      <div className="space-y-6 pb-8 animate-page-in">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setActiveCalc(null)} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600" /></button>
-          <div><h1 className="text-xl font-black text-gray-900 tracking-tight">PPM Calculator</h1><p className="text-[10px] text-gray-500 font-mono-sci mt-0.5 uppercase">Dry Mass Nutrient Dosing</p></div>
-        </div>
-        
-        <div className="bento-card p-6 bg-white space-y-4">
-          <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Target Concentration (PPM)</label><input type="number" step="1" value={ppmTarget} onChange={e => setPpmTarget(e.target.value)} className="w-full mt-1 p-3.5 rounded-xl border-2 border-gray-100 font-mono-sci text-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all" placeholder="150" /></div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Volume (Liters)</label><input type="number" step="0.1" value={ppmVolume} onChange={e => setPpmVolume(e.target.value)} className="w-full mt-1 p-3.5 rounded-xl border-2 border-gray-100 font-mono-sci text-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all" placeholder="10" /></div>
-            <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Element % (w/w)</label><input type="number" step="0.1" value={ppmElement} onChange={e => setPpmElement(e.target.value)} className="w-full mt-1 p-3.5 rounded-xl border-2 border-gray-100 font-mono-sci text-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all" placeholder="20" /></div>
+      <div className="space-y-5 pb-8 animate-page-in">
+        <CalcHeader title="Fertilizer dosing" method="Dry fertilizer mass for a target element concentration" onBack={() => setActiveCalc(null)} />
+        <div className="bento-card space-y-4">
+          <Field id="ppm-target" label="Target concentration" unit="ppm = mg L⁻¹" step="1" placeholder="150" value={ppmTarget} onChange={setPpmTarget} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field id="ppm-volume" label="Solution volume" unit="L" step="0.1" placeholder="10" value={ppmVolume} onChange={setPpmVolume} />
+            <Field id="ppm-element" label="Element in product" unit="% w/w" step="0.1" placeholder="20" value={ppmElement} onChange={setPpmElement} />
           </div>
-          
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2 text-center">Required Dry Mass</p>
-            <div className="text-center font-mono-sci text-5xl font-black text-blue-600 tracking-tighter">
-              {ppmResult ? ppmResult : '0.00'} <span className="text-lg text-blue-300 font-bold tracking-normal uppercase">grams</span>
-            </div>
-          </div>
+          <Result label="Required dry mass" value={ppmResult ?? '–'} unit="g" />
+          <Formula>mass (g) = ppm × volume (L) / (element % × 10)</Formula>
         </div>
       </div>
     );
   }
 
-  // Main Menu View
   return (
     <div className="space-y-6 pb-8 animate-page-in">
-      <div className="px-2">
-        <h1 className="text-3xl font-black tracking-tight">Calculators</h1>
-      </div>
+      <header>
+        <h1 className="text-2xl font-semibold text-gray-900">Calculators</h1>
+        <p className="text-sm text-gray-500 mt-1">Standard greenhouse and seed-testing equations.</p>
+      </header>
 
-      <div className="space-y-4 px-2">
-        {calculators.map((calc) => (
-          <div key={calc.id} onClick={() => setActiveCalc(calc.id)} className="bento-card p-5 flex items-center gap-5 bg-white/70 hover:bg-white group cursor-pointer active:scale-[0.98] transition-all">
-            <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${calc.color} shadow-lg ${calc.shadow} group-hover:scale-110 transition-transform duration-300`}>
-              <calc.icon className="w-6 h-6 text-white" />
+      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100 overflow-hidden">
+        {calculators.map(calc => (
+          <button key={calc.id} onClick={() => setActiveCalc(calc.id)} className="w-full text-left flex items-center gap-3 px-4 py-3.5 hover:bg-green-50 transition-colors group">
+            <div className="w-10 h-10 rounded-md bg-green-50 border border-green-100 flex items-center justify-center shrink-0 group-hover:bg-white">
+              <calc.icon className="w-5 h-5 text-green-700" strokeWidth={1.8} />
             </div>
-            <div className="flex-1">
-              <h3 className={`font-black text-sm tracking-tight ${calc.text}`}>{calc.title}</h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-gray-900">{calc.title}</h3>
+              <p className="text-xs text-gray-500">{calc.desc}</p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white transition-colors text-gray-400">
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </div>
+            <span className="font-mono-sci text-[11px] text-gray-400 shrink-0">{calc.unit}</span>
+            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-green-700" />
+          </button>
         ))}
-      </div>
-      
-      <div className="mx-2 p-8 rounded-[2rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center mt-8">
-        <Calculator className="w-8 h-8 text-gray-300" />
       </div>
     </div>
   );

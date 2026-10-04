@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Ruler, X, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, Ruler, X } from 'lucide-react';
 import type { GrowthLog } from '../../types';
 
 const MorphometricsPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<GrowthLog[]>([]);
+  const [logs, setLogs] = useState<GrowthLog[]>(() => loadJSON('ac_morpho_logs', []));
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -22,10 +23,6 @@ const MorphometricsPage = () => {
     rootDryWeight: '',
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ac_morpho_logs');
-    if (saved) setLogs(JSON.parse(saved));
-  }, []);
 
   const saveLog = () => {
     if (!form.avgHeightCm || !form.avgRCDmm) return;
@@ -65,65 +62,65 @@ const MorphometricsPage = () => {
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Morphometrics</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Morphometrics</h1>
           
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-violet-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/30 hover:scale-105 transition-transform">
+        <button onClick={() => setShowForm(true)} className="bg-green-700 hover:bg-green-800 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform">
           <Plus className="w-5 h-5" />
         </button>
       </div>
 
       {/* Derived Quality Indices */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bento-card p-4 border-l-4 border-l-indigo-500 bg-white/90">
+        <div className="bento-card p-4">
           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">H/D Ratio</span>
-          <div className="font-mono-sci text-2xl font-bold text-indigo-700 mt-1">{sturdiness}</div>
+          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{sturdiness}</div>
           <div className="text-[8px] text-gray-400 font-mono-sci">Sturdiness</div>
         </div>
-        <div className="bento-card p-4 border-l-4 border-l-violet-500 bg-white/90">
+        <div className="bento-card p-4">
           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">S/R Ratio</span>
-          <div className="font-mono-sci text-2xl font-bold text-violet-700 mt-1">{srRatio}</div>
+          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{srRatio}</div>
           <div className="text-[8px] text-gray-400 font-mono-sci">Shoot/Root</div>
         </div>
-        <div className="bento-card p-4 border-l-4 border-l-purple-500 bg-white/90">
+        <div className="bento-card p-4">
           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">DQI</span>
-          <div className="font-mono-sci text-2xl font-bold text-purple-700 mt-1">{dqi}</div>
+          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{dqi}</div>
           <div className="text-[8px] text-gray-400 font-mono-sci">Dickson Index</div>
         </div>
       </div>
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">New Measurement</h2>
+              <h2 className="font-semibold text-lg text-gray-900">New Measurement</h2>
               <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Date</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sample (n)</label><input type="number" value={form.sampleSize} onChange={e => setForm({...form, sampleSize: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Date</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Sample (n)</label><input type="number" value={form.sampleSize} onChange={e => setForm({...form, sampleSize: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Non-Destructive Measurements</p>
+                <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Non-Destructive Measurements</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Height (cm)</label><input type="number" step="0.1" placeholder="15.2" value={form.avgHeightCm} onChange={e => setForm({...form, avgHeightCm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RCD (mm)</label><input type="number" step="0.01" placeholder="4.20" value={form.avgRCDmm} onChange={e => setForm({...form, avgRCDmm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Leaves (#)</label><input type="number" step="1" placeholder="6" value={form.avgLeaves} onChange={e => setForm({...form, avgLeaves: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">SPAD Value</label><input type="number" step="0.1" placeholder="42.5" value={form.spadValue} onChange={e => setForm({...form, spadValue: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Height (cm)</label><input type="number" step="0.1" placeholder="15.2" value={form.avgHeightCm} onChange={e => setForm({...form, avgHeightCm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">RCD (mm)</label><input type="number" step="0.01" placeholder="4.20" value={form.avgRCDmm} onChange={e => setForm({...form, avgRCDmm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Leaves (#)</label><input type="number" step="1" placeholder="6" value={form.avgLeaves} onChange={e => setForm({...form, avgLeaves: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">SPAD Value</label><input type="number" step="0.1" placeholder="42.5" value={form.spadValue} onChange={e => setForm({...form, spadValue: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
                 </div>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Destructive Sampling (Optional)</p>
+                <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Destructive Sampling (Optional)</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Shoot FW (g)</label><input type="number" step="0.01" placeholder="5.20" value={form.shootFreshWeight} onChange={e => setForm({...form, shootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Root FW (g)</label><input type="number" step="0.01" placeholder="3.40" value={form.rootFreshWeight} onChange={e => setForm({...form, rootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Shoot DW (g)</label><input type="number" step="0.01" placeholder="2.45" value={form.shootDryWeight} onChange={e => setForm({...form, shootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Root DW (g)</label><input type="number" step="0.01" placeholder="1.80" value={form.rootDryWeight} onChange={e => setForm({...form, rootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-indigo-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Shoot FW (g)</label><input type="number" step="0.01" placeholder="5.20" value={form.shootFreshWeight} onChange={e => setForm({...form, shootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Root FW (g)</label><input type="number" step="0.01" placeholder="3.40" value={form.rootFreshWeight} onChange={e => setForm({...form, rootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Shoot DW (g)</label><input type="number" step="0.01" placeholder="2.45" value={form.shootDryWeight} onChange={e => setForm({...form, shootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
+                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Root DW (g)</label><input type="number" step="0.01" placeholder="1.80" value={form.rootDryWeight} onChange={e => setForm({...form, rootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
                 </div>
               </div>
-              <button onClick={saveLog} className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Record Measurement</button>
+              <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Record Measurement</button>
             </div>
           </div>
         </div>
@@ -139,9 +136,9 @@ const MorphometricsPage = () => {
       ) : (
         <div className="space-y-3">
           {logs.map(log => (
-            <div key={log.id} className="bento-card p-4 bg-white/90 border border-gray-200">
+            <div key={log.id} className="bento-card p-4 border border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-mono-sci text-[10px] font-bold text-indigo-600">{log.id}</span>
+                <span className="font-mono-sci text-[10px] font-bold text-green-600">{log.id}</span>
                 <span className="font-mono-sci text-[10px] text-gray-400">{log.date} · n={log.sampleSize}</span>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">

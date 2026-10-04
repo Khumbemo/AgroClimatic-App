@@ -33,22 +33,22 @@ const BatchListPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-black text-gray-900">Nursery Batches</h1>
-        <Link to="/nursery/new" className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-2xl shadow-lg shadow-green-100 transition-all active:scale-95">
+        <h1 className="text-2xl font-semibold text-gray-900">Nursery Batches</h1>
+        <Link to="/nursery/new" className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow-sm  transition-all active:scale-95">
           <Plus className="w-5 h-5" />
         </Link>
       </div>
 
       <div className="grid gap-4">
         {batches.map((batch) => (
-          <Link key={batch.id} to={`/nursery/batch/${batch.id}`} className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 hover:border-green-200 transition-all group">
-            <div className="bg-green-50 p-4 rounded-2xl group-active:scale-90 transition-transform">
+          <Link key={batch.id} to={`/nursery/batch/${batch.id}`} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:border-green-200 transition-all group">
+            <div className="bg-green-50 p-4 rounded-lg group-active:scale-90 transition-transform">
               <Sprout className="w-6 h-6 text-green-600" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-gray-900">{batch.batchNumber}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${batch.status === 'growing' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-widest ${batch.status === 'growing' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'}`}>
                   {batch.status}
                 </span>
               </div>

@@ -1,80 +1,51 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Wrench, Calculator, MessageSquare, Settings, ArrowLeft } from 'lucide-react';
+import { Home, Wrench, Calculator, MessageSquare, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 
 const TopHeader = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  const isSubPage = pathParts.length > 1;
-
-  const subPageTitles: Record<string, string> = {
-    'tools/environmental': 'Environmental Logs',
-    'tools/germination': 'Germination Tracker',
-    'tools/treatments': 'Treatment Logs',
-    'tools/morphometrics': 'Morphometrics',
-    'tools/spatial': 'Spatial Mapping',
-    'tools/experimental': 'Experimental Design',
-    'tools/substrate': 'Substrate & Nutrients',
-    'tools/provenance': 'Provenance & Lineage',
-    'tools/mortality': 'Mortality Diagnostics',
-    'tools/audit': 'Data Quality & Audit',
-    'nursery/new': 'New Batch',
-    'records/seeds': 'Seed Lots',
-    'settings': 'Settings',
-  };
-
-  const currentSubPath = pathParts.join('/');
-  const subTitle = subPageTitles[currentSubPath];
-
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b-0 px-4 py-3 flex justify-between items-center mx-3 mt-3 rounded-2xl">
-      {isSubPage && subTitle ? (
-        <>
-          <motion.button
-            whileHover={{ x: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(-1)}
-            className="p-2 -ml-1 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all rounded-xl"
-          >
-            <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
-          </motion.button>
-          <span className="font-black text-sm text-gray-800 tracking-tight flex-1 text-center">{subTitle}</span>
-          <div className="w-9" />
-        </>
-      ) : (
-        <>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-              <span className="text-white font-black text-[10px] tracking-widest">AC</span>
-            </div>
-            <div>
-              <span className="font-black text-lg text-gray-800 tracking-tight leading-none block">AgroClimatic</span>
-              <span className="text-[8px] text-gray-400 font-mono-sci font-bold uppercase tracking-widest">Lab v1.2</span>
-            </div>
+    <header className="sticky top-0 z-50 bg-white/95 border-b border-gray-200">
+      <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 h-14 flex justify-between items-center">
+        <div className="flex items-center gap-2.5">
+          <GreenhouseMark />
+          <div className="leading-tight">
+            <span className="font-semibold text-[15px] text-gray-900 block">AgroClimatic</span>
+            <span className="text-[10px] text-gray-500 font-mono-sci">Nursery research lab · v1.2</span>
           </div>
-          <motion.button
-            whileHover={{ rotate: 15 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate('/settings')}
-            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-all rounded-xl"
-          >
-            <Settings className="w-5 h-5" strokeWidth={2.5} />
-          </motion.button>
-        </>
-      )}
+        </div>
+        <button
+          onClick={() => navigate('/settings')}
+          aria-label="Settings"
+          className="p-2 -mr-2 text-gray-500 hover:text-green-700 hover:bg-green-50 transition-colors rounded-md"
+        >
+          <Settings className="w-5 h-5" strokeWidth={2} />
+        </button>
+      </div>
     </header>
   );
 };
+
+// Gable-roof greenhouse with a seedling inside: the app's mark.
+const GreenhouseMark = () => (
+  <div className="w-9 h-9 rounded-md bg-green-700 flex items-center justify-center">
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#dcebd5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 11 12 4l9 7" />
+      <path d="M5 9.5V20h14V9.5" />
+      <path d="M12 20v-5" />
+      <path d="M12 16c-2.2 0-3.4-1.3-3.4-3.2 2 0 3.4 1.1 3.4 3.2Z" fill="#92bf80" stroke="none" />
+      <path d="M12 15c0-2 1.3-3.2 3.4-3.2 0 2-1.4 3.2-3.4 3.2Z" fill="#bbd8ae" stroke="none" />
+    </svg>
+  </div>
+);
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/tools', icon: Wrench, label: 'Tools' },
   { to: '/calc', icon: Calculator, label: 'Calc' },
-  { to: '/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/chat', icon: MessageSquare, label: 'AgroBot' },
 ];
 
 const BottomNav = () => {
@@ -86,45 +57,30 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 px-4 z-50 flex justify-center">
-      <nav className="glass-pill flex justify-around items-center h-14 w-full max-w-md rounded-full px-1">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className="relative flex flex-col items-center justify-center w-16 h-11"
-          >
-            {({ isActive }) => (
-              <>
-                <AnimatePresence>
-                  {getIsActive(to) && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      className="absolute inset-0 bg-green-50/80 rounded-2xl -z-10 shadow-sm"
-                      transition={{ type: 'spring', bounce: 0.3, duration: 0.6 }}
-                    />
-                  )}
-                </AnimatePresence>
-                <Icon
-                  className={cn(
-                    "w-5 h-5 mb-0.5 transition-colors duration-300",
-                    getIsActive(to) ? "text-green-600" : "text-gray-400"
-                  )}
-                  strokeWidth={2.5}
-                />
-                <span className={cn(
-                  "text-[8px] font-black uppercase tracking-widest transition-colors duration-300",
-                  getIsActive(to) ? "text-green-600" : "text-gray-400"
-                )}>
-                  {label}
-                </span>
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex justify-around items-stretch h-16">
+        {navItems.map(({ to, icon: Icon, label }) => {
+          const active = getIsActive(to);
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className="relative flex-1 flex flex-col items-center justify-center gap-1"
+            >
+              <span className={cn("absolute top-0 h-0.5 w-10 rounded-b transition-colors", active ? "bg-green-700" : "bg-transparent")} />
+              <Icon className={cn("w-5 h-5 transition-colors", active ? "text-green-700" : "text-gray-400")} strokeWidth={2} />
+              <span className={cn("text-[11px] font-medium transition-colors", active ? "text-green-800" : "text-gray-500")}>
+                {label}
+              </span>
+            </NavLink>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
 
@@ -138,7 +94,7 @@ const MainLayout: React.FC = () => {
     return location.pathname.startsWith(item.to);
   });
 
-  const handleDragEnd = (event: any, info: any) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     // SECURITY: Disable swiping if user is focused on an input or if we're in Chat
     const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '');
     if (isInput) return;
@@ -158,15 +114,15 @@ const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen pb-24 flex flex-col font-sans selection:bg-green-200">
       <TopHeader />
-      <main className="flex-1 max-w-md mx-auto px-4 pt-4 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
+      <main className="flex-1 max-w-md mx-auto px-4 pt-5 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={location.pathname}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 50 }}
+            initial={{ opacity: 0, x: direction * 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
+            exit={{ opacity: 0, x: direction * -24 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.05} // Lower elasticity to prevent jumpy feeling

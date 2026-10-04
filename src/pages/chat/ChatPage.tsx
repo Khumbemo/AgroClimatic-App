@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, X, Terminal, BookOpen, Leaf, Microscope, Database, ArrowDown, ShieldCheck } from 'lucide-react';
+import { Bot, Send, Sparkles, X, Terminal, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { type ChatMessage } from '../../types';
 import { getNurseryContext } from '../../utils/chatContext';
@@ -21,6 +21,9 @@ REASONING FRAMEWORK:
 
 SCIENTIFIC DOMAINS:
 - Silviculture, Seed Physiology, Greenhouse Engineering, Experimental Design (RCBD), Biodiversity Indices.`;
+
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const HAS_LIVE_MODEL = Boolean(GEMINI_KEY) && GEMINI_KEY !== 'your_api_key';
 
 const STARTERS = [
   "Analyze moisture level of SL-001",
@@ -100,8 +103,8 @@ const AgroBotPage = () => {
       const data = await response.json();
       const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
       setMessages([...newMessages, { role: 'assistant', content: reply }]);
-    } catch (err: any) {
-      setError(err.message || 'Connection error. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error && err.message ? err.message : 'Connection error. Please try again.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -109,9 +112,10 @@ const AgroBotPage = () => {
   };
 
   const parseMarkdown = (text: string) => {
-    let parsed = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-900 dark:text-emerald-400">$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em class="italic text-emerald-700 dark:text-emerald-300 font-medium">$1</em>')
+    const parsed = text
+      .replace(/^#{1,6}\s+(.+)$/gm, '<strong class="block text-sm font-semibold text-gray-900 mb-1">$1</strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-green-900 dark:text-green-400">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic text-green-700 dark:text-green-300 font-medium">$1</em>')
       .replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-4 list-decimal my-1">$1</li>')
       .replace(/^[-•]\s+(.+)$/gm, '<li class="ml-4 list-disc my-1">$1</li>')
       .split('\n').join('<br/>');
@@ -119,35 +123,19 @@ const AgroBotPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-col h-[calc(100vh-150px)]">
       {/* Header Section */}
-      <div className="mb-4 px-2 flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2 tracking-tight dark:text-white">
-            AgroBot <span className="text-emerald-600">Intelligence</span>
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 4 }}
-              className="bg-emerald-100 dark:bg-emerald-900/40 p-1.5 rounded-lg"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-            </motion.div>
-          </h1>
-          <div className="flex items-center gap-2 mt-1">
-             <ShieldCheck className="w-3 h-3 text-emerald-500" />
-             <p className="text-[10px] text-gray-400 font-mono-sci uppercase tracking-widest">
-               Scientific Grounding Active
-             </p>
-          </div>
-        </div>
-        <div className="flex gap-1.5">
-          <motion.div whileHover={{ y: -2 }} className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800" title="Nursery Aware"><Database className="w-3.5 h-3.5 text-emerald-600" /></motion.div>
-          <motion.div whileHover={{ y: -2 }} className="p-2 bg-gray-100 dark:bg-slate-800 rounded-lg" title="PhD Specialized"><Microscope className="w-3.5 h-3.5 text-gray-400" /></motion.div>
-        </div>
-      </div>
+      <header className="mb-4">
+        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
+          AgroBot <Sparkles className="w-4 h-4 text-green-600" />
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {HAS_LIVE_MODEL ? 'Research assistant for forestry, seed physiology and greenhouse climate.' : 'Offline mode: pre-written reference answers.'}
+        </p>
+      </header>
 
       {/* Main Chat Area */}
-      <div className="flex-1 glass-panel rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col relative bg-white/40 dark:bg-slate-900/40">
+      <div className="flex-1 glass-panel rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col relative bg-white/40 dark:bg-gray-900/40">
         
         {/* Messages Container */}
         <div
@@ -165,24 +153,24 @@ const AgroBotPage = () => {
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mb-4 shadow-inner"
+                  className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-4 shadow-inner"
                 >
-                  <Bot className="w-8 h-8 text-emerald-600" />
+                  <Bot className="w-8 h-8 text-green-600" />
                 </motion.div>
-                <h3 className="font-black text-gray-800 dark:text-gray-200 text-sm uppercase tracking-widest mb-2">Research Session Ready</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm mb-1">Ask about your nursery</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-6 italic">
-                  "I provide data-grounded analysis on your specific nursery records."
+                  Species, seed lots, batches, VPD and trial design.
                 </p>
 
                 <div className="w-full space-y-2">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Precision Queries</p>
+                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Try asking</p>
                   {STARTERS.map((s, i) => (
                     <motion.button
                       key={i}
                       whileHover={{ x: 4, backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleSend(s)}
-                      className="w-full text-left p-3 text-[11px] bg-white/80 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 rounded-xl transition-all text-gray-600 dark:text-gray-300 font-medium"
+                      className="w-full text-left p-3 text-[11px] bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 rounded-xl transition-all text-gray-600 dark:text-gray-300 font-medium"
                     >
                       {s}
                     </motion.button>
@@ -197,10 +185,10 @@ const AgroBotPage = () => {
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                  <div className={`max-w-[85%] p-4 rounded-lg text-sm leading-relaxed shadow-sm ${
                     m.role === 'user'
-                      ? 'bg-emerald-600 text-white rounded-br-none'
-                      : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                      ? 'bg-green-600 text-white rounded-br-none'
+                      : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                   }`}>
                     {m.role === 'assistant' ? parseMarkdown(m.content) : m.content}
                   </div>
@@ -211,10 +199,10 @@ const AgroBotPage = () => {
 
           {isLoading && (
             <motion.div className="flex justify-start">
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-4 rounded-2xl rounded-bl-none flex gap-1">
-                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></motion.div>
-                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></motion.div>
-                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></motion.div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 rounded-lg rounded-bl-none flex gap-1">
+                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
+                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
+                <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
               </div>
             </motion.div>
           )}
@@ -236,15 +224,15 @@ const AgroBotPage = () => {
               setIsNearBottom(true);
               scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
             }}
-            className="absolute bottom-24 right-6 p-2 bg-emerald-600 text-white rounded-full shadow-lg z-20"
+            className="absolute bottom-24 right-6 p-2 bg-green-600 text-white rounded-full shadow-sm z-20"
           >
             <ArrowDown className="w-4 h-4" />
           </motion.button>
         )}
 
         {/* Input Area */}
-        <div className="p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-t border-gray-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm focus-within:border-emerald-500 transition-all">
+        <div className="p-4 bg-white/60 dark:bg-gray-900/60 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:border-green-500 transition-all">
             <input 
               type="text" 
               value={input}
@@ -261,19 +249,19 @@ const AgroBotPage = () => {
               disabled={isLoading || !input.trim()}
               className={`p-3 rounded-xl transition-all ${
                 isLoading || !input.trim()
-                  ? 'bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-gray-500'
-                  : 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-none'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-500'
+                  : 'bg-green-600 text-white shadow-sm  dark:shadow-none'
               }`}
             >
               <Send className="w-4 h-4" />
             </motion.button>
           </div>
           <div className="flex justify-between items-center mt-3 px-1">
-            <div className="flex items-center gap-1.5 text-gray-300 dark:text-slate-600">
+            <div className="flex items-center gap-1.5 text-gray-400">
               <Terminal className="w-3 h-3" />
-              <span className="text-[8px] font-black uppercase tracking-[0.2em]">Data-Grounded Flash 1.5</span>
+              <span className="text-[10px] font-mono-sci">{HAS_LIVE_MODEL ? 'gemini-1.5-flash' : 'offline'}</span>
             </div>
-            <p className="text-[8px] text-gray-400 dark:text-slate-500 font-medium italic">Hallucination protection active</p>
+            <p className="text-[10px] text-gray-500">Check advice against your own trial data.</p>
           </div>
         </div>
       </div>

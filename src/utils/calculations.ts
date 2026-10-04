@@ -52,3 +52,25 @@ export const calculateGDD = (tMax: number, tMin: number, tBase: number = 10): nu
   const dailyMean = (tMax + tMin) / 2;
   return Math.max(0, dailyMean - tBase);
 };
+
+/**
+ * Vapour pressure deficit (kPa) from air temperature (°C) and relative humidity (%),
+ * using the Tetens equation for saturation vapour pressure.
+ */
+export const calculateVPD = (tempC: number, rh: number): number => {
+  const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
+  return svp * (1 - rh / 100);
+};
+
+export type VpdBand = { max: number; label: string; tone: 'water' | 'leaf-light' | 'leaf' | 'warn' | 'critical' };
+
+// Common greenhouse VPD guidance bands (kPa). Upper bound of the last band is open.
+export const VPD_BANDS: VpdBand[] = [
+  { max: 0.4, label: 'Low transpiration', tone: 'water' },
+  { max: 0.8, label: 'Propagation', tone: 'leaf-light' },
+  { max: 1.2, label: 'Optimal vegetative', tone: 'leaf' },
+  { max: 1.6, label: 'High transpiration', tone: 'warn' },
+  { max: Infinity, label: 'Stress / stomatal closure', tone: 'critical' },
+];
+
+export const getVpdBand = (vpd: number): VpdBand => VPD_BANDS.find(b => vpd < b.max) ?? VPD_BANDS[VPD_BANDS.length - 1];

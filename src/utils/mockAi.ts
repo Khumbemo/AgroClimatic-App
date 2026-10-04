@@ -16,7 +16,7 @@ const MOCK_KNOWLEDGE: Record<string, string> = {
 
   "germination": "### Germination Physiology\n**Types:** \n1. **Epigeal:** Cotyledons emerge above ground (e.g., *Pinus roxburghii*).\n2. **Hypogeal:** Cotyledons remain below ground (e.g., *Quercus* species).",
 
-  "cedrus deodara": "### *Cedrus deodara* (Deodar)\n**Status:** IUCN Least Concern but ecologically sensitive. \n**Seed Science:** Seeds are recalcitrant/intermediate and have high oil content, meaning they lose viability quickly if desiccated. Requires cold stratification (3-5°C) for 30-60 days."
+  "cedrus deodara": "### *Cedrus deodara* (Deodar)\n**Status:** IUCN Least Concern but ecologically sensitive. \n**Seed Science:** Seeds are oily and short-lived at ambient temperature (about one season), but behave as sub-orthodox: dried to ~10% moisture and held at -5°C they remain viable for over 650 days. Requires cold stratification (3-5°C) for 30-60 days."
 };
 
 export const getMockResponse = (input: string): string => {
