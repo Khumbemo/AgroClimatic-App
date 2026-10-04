@@ -1,115 +1,150 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, Beaker, Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Beaker, Layers, X } from 'lucide-react';
+import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
+import { leachingFraction } from '../../utils/calculations';
+import { Page, PageHeader } from '../../components/ui/Page';
+import { ChartFrame, EmptyState, Stat, StatGrid, Tabs } from '../../components/ui/Display';
+import { FieldGroup, FieldShell, TextField, controlCls } from '../../components/ui/Field';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import RecordList from '../../components/ui/RecordList';
+import FormError from '../../components/data/FormError';
+import BatchSelect from '../../components/data/BatchSelect';
+import TimeSeriesChart from '../../components/charts/TimeSeriesChart';
+import { numOrNull, req, today, useRecordForm } from '../../components/ui/useRecordForm';
 
-interface LeachateLog { id:string; date:string; batchId:string; phIn:number; phOut:number; ecIn:number; ecOut:number; volumeMl:number; createdAt:string; createdBy:string; }
-interface SubstrateProfile { id:string; name:string; components:{name:string;pct:number}[]; cec:number; createdAt:string; }
+type TabType = 'leachate' | 'mixes';
+const MIX_COLOURS = ['bg-amber-400', 'bg-green-500', 'bg-gray-400', 'bg-blue-400', 'bg-amber-200', 'bg-green-300'];
 
 const SubstratePage = () => {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState<'leachate'|'substrate'>('leachate');
-  const [leachLogs, setLeachLogs] = useState<LeachateLog[]>([]);
-  const [profiles, setProfiles] = useState<SubstrateProfile[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [lForm, setLForm] = useState({date:new Date().toISOString().split('T')[0], batchId:'', phIn:'', phOut:'', ecIn:'', ecOut:'', volumeMl:''});
-  const [sForm, setSForm] = useState({name:'', components:[{name:'Peat',pct:30},{name:'Coco Coir',pct:50},{name:'Perlite',pct:20}] as {name:string;pct:number}[], cec:''});
+  const { repo } = useData();
+  const { label } = useBatchIndex();
+  const [tab, setTab] = useState<TabType>('leachate');
+  const tests = [...useCollection('leachateTests').items].sort(byDateDesc);
+  const mixes = [...useCollection('substrateMixes').items].sort((a, b) => a.name.localeCompare(b.name));
+  const series = [...tests].reverse().slice(-40);
+  const latest = tests[0];
 
-  useEffect(()=>{ const l=localStorage.getItem('ac_leachate'); if(l) setLeachLogs(JSON.parse(l)); const s=localStorage.getItem('ac_substrates'); if(s) setProfiles(JSON.parse(s)); },[]);
+  const lf = useRecordForm(() => ({ date: today(), batchId: null as string | null, phIn: '', phOut: '', ecIn: '', ecOut: '', volumeMl: '', appliedMl: '' }));
+  const mf = useRecordForm(() => ({ name: '', cec: '', components: [{ name: 'Peat', pct: '30' }, { name: 'Coco coir', pct: '50' }, { name: 'Perlite', pct: '20' }] }));
+  const totalPct = mf.values.components.reduce((s, c) => s + (Number(c.pct) || 0), 0);
 
-  const saveLeachate = () => {
-    if(!lForm.phIn||!lForm.ecIn) return;
-    const log:LeachateLog = {id:`LL-${Date.now()}`, date:lForm.date, batchId:lForm.batchId, phIn:parseFloat(lForm.phIn), phOut:parseFloat(lForm.phOut)||0, ecIn:parseFloat(lForm.ecIn), ecOut:parseFloat(lForm.ecOut)||0, volumeMl:parseFloat(lForm.volumeMl)||0, createdAt:new Date().toISOString(), createdBy:'Nursery Manager'};
-    const u=[log,...leachLogs]; setLeachLogs(u); localStorage.setItem('ac_leachate',JSON.stringify(u));
-    setShowForm(false); setLForm({date:new Date().toISOString().split('T')[0],batchId:'',phIn:'',phOut:'',ecIn:'',ecOut:'',volumeMl:''});
-  };
+  const saveTest = () => lf.submit(async () => {
+    const v = lf.values;
+    if (!v.batchId) throw new Error('Select the batch that was tested.');
+    await repo.add('leachateTests', {
+      date: v.date, batchId: v.batchId, phIn: req(v.phIn), phOut: numOrNull(v.phOut), ecIn: req(v.ecIn), ecOut: numOrNull(v.ecOut),
+      volumeMl: numOrNull(v.volumeMl), appliedMl: numOrNull(v.appliedMl),
+    });
+  }, { keep: ['date', 'batchId'] });
 
-  const saveSubstrate = () => {
-    if(!sForm.name) return;
-    const p:SubstrateProfile = {id:`SUB-${Date.now()}`, name:sForm.name, components:sForm.components.filter(c=>c.pct>0), cec:parseFloat(sForm.cec)||0, createdAt:new Date().toISOString()};
-    const u=[p,...profiles]; setProfiles(u); localStorage.setItem('ac_substrates',JSON.stringify(u));
-    setShowForm(false); setSForm({name:'',components:[{name:'Peat',pct:30},{name:'Coco Coir',pct:50},{name:'Perlite',pct:20}],cec:''});
-  };
+  const saveMix = () => mf.submit(() => repo.add('substrateMixes', {
+    name: mf.values.name,
+    components: mf.values.components.filter(c => c.name.trim() || c.pct).map(c => ({ name: c.name, pct: Number(c.pct) || 0 })),
+    cec: numOrNull(mf.values.cec),
+  }));
 
-  const updateComp = (i:number, field:'name'|'pct', val:string) => {
-    const c=[...sForm.components]; if(field==='pct') c[i].pct=parseFloat(val)||0; else c[i].name=val; setSForm({...sForm,components:c});
-  };
-  const addComp = () => setSForm({...sForm,components:[...sForm.components,{name:'',pct:0}]});
-  const totalPct = sForm.components.reduce((s,c)=>s+c.pct,0);
+  const setComp = (i: number, key: 'name' | 'pct', value: string) =>
+    mf.set('components')(mf.values.components.map((c, j) => (j === i ? { ...c, [key]: value } : c)));
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex items-center gap-3">
-        <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Substrate & Nutrients</h1></div>
-        <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-lime-500 to-green-600 text-white p-2.5 rounded-xl shadow-lg shadow-lime-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
-      </div>
+    <Page>
+      <PageHeader title="Substrate & nutrients" subtitle="Leachate (pour-through) tests and substrate mix recipes." back="/tools"
+        actions={<Button icon={<Plus className="w-4 h-4" />} onClick={tab === 'leachate' ? lf.openForm : mf.openForm}>New</Button>} />
+      <Tabs label="Records" value={tab} onChange={setTab} tabs={[{ value: 'leachate', label: 'Leachate tests', icon: Beaker }, { value: 'mixes', label: 'Substrate mixes', icon: Layers }]} />
 
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
-        {[{k:'leachate' as const,l:'Leachate',ic:<Beaker className="w-3.5 h-3.5"/>},{k:'substrate' as const,l:'Substrate',ic:<Layers className="w-3.5 h-3.5"/>}].map(t=>(
-          <button key={t.k} onClick={()=>setTab(t.k)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tab===t.k?'bg-white text-gray-900 shadow-sm':'text-gray-400'}`}>{t.ic} {t.l}</button>
-        ))}
-      </div>
-
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-black text-lg">{tab==='leachate'?'Leachate Entry':'Substrate Profile'}</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
-            {tab==='leachate' ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Date</label><input type="date" value={lForm.date} onChange={e=>setLForm({...lForm,date:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                  <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Batch ID</label><input type="text" placeholder="BATCH-001" value={lForm.batchId} onChange={e=>setLForm({...lForm,batchId:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100"><p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3">Irrigation Input</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">pH In</label><input type="number" step="0.01" placeholder="6.50" value={lForm.phIn} onChange={e=>setLForm({...lForm,phIn:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                    <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">EC In (mS/cm)</label><input type="number" step="0.01" placeholder="1.20" value={lForm.ecIn} onChange={e=>setLForm({...lForm,ecIn:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                  </div>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100"><p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-3">Leachate Output</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">pH Out</label><input type="number" step="0.01" placeholder="5.80" value={lForm.phOut} onChange={e=>setLForm({...lForm,phOut:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                    <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">EC Out (mS/cm)</label><input type="number" step="0.01" placeholder="2.40" value={lForm.ecOut} onChange={e=>setLForm({...lForm,ecOut:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                  </div>
-                </div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Leachate Volume (mL)</label><input type="number" value={lForm.volumeMl} onChange={e=>setLForm({...lForm,volumeMl:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                <button onClick={saveLeachate} className="w-full bg-gradient-to-r from-lime-500 to-green-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Record Entry</button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Profile Name</label><input type="text" placeholder="Standard Nursery Mix" value={sForm.name} onChange={e=>setSForm({...sForm,name:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Components (Total: <span className={totalPct===100?'text-green-600':'text-red-500'}>{totalPct}%</span>)</label>
-                  {sForm.components.map((c,i)=>(<div key={i} className="flex gap-2 mb-2"><input type="text" value={c.name} onChange={e=>updateComp(i,'name',e.target.value)} className="flex-1 p-2 rounded-lg border border-gray-200 font-mono-sci text-sm outline-none"/><input type="number" value={c.pct} onChange={e=>updateComp(i,'pct',e.target.value)} className="w-20 p-2 rounded-lg border border-gray-200 font-mono-sci text-sm text-center outline-none"/><span className="text-sm text-gray-400 self-center">%</span></div>))}
-                  <button onClick={addComp} className="text-xs text-lime-600 font-bold">+ Add Component</button>
-                </div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">CEC (cmol/kg)</label><input type="number" step="0.1" placeholder="25.0" value={sForm.cec} onChange={e=>setSForm({...sForm,cec:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                <button onClick={saveSubstrate} className="w-full bg-gradient-to-r from-lime-500 to-green-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Save Profile</button>
-              </div>
-            )}
-          </div>
-        </div>
+      {tab === 'leachate' && (
+        <>
+          {latest && (
+            <StatGrid cols={4}>
+              <Stat label="EC out" value={latest.ecOut ?? '—'} unit="mS cm⁻¹" note={latest.date} />
+              <Stat label="ΔEC (out − in)" value={latest.ecOut != null ? (latest.ecOut - latest.ecIn).toFixed(2) : '—'} unit="mS cm⁻¹" note="Rising ΔEC suggests salt build-up" />
+              <Stat label="pH out" value={latest.phOut ?? '—'} />
+              <Stat label="Leaching fraction" value={latest.volumeMl != null && latest.appliedMl ? leachingFraction(latest.volumeMl, latest.appliedMl)!.toFixed(2) : '—'} formula="drainage / applied" />
+            </StatGrid>
+          )}
+          {series.length >= 2 && (
+            <ChartFrame title="EC and pH" caption="Irrigation water (in) versus leachate (out).">
+              <TimeSeriesChart labels={series.map(t => t.date.slice(5))} yTitle="EC mS cm⁻¹" y1Title="pH" series={[
+                { label: 'EC in', data: series.map(t => t.ecIn), color: 'blue-500', dashed: true },
+                { label: 'EC out', data: series.map(t => t.ecOut), color: 'blue-700' },
+                { label: 'pH in', data: series.map(t => t.phIn), color: 'green-500', axis: 'y1', dashed: true },
+                { label: 'pH out', data: series.map(t => t.phOut), color: 'green-700', axis: 'y1' },
+              ]} />
+            </ChartFrame>
+          )}
+          {tests.length === 0 ? <EmptyState icon={Beaker} title="No leachate tests yet" text="Record irrigation-water and leachate pH and EC to track salt build-up and root-zone pH." action={<Button onClick={lf.openForm}>Add test</Button>} /> : (
+            <RecordList label="Leachate tests" onDelete={id => repo.remove('leachateTests', id)} rows={tests.map(t => ({
+              id: t.id, title: label(t.batchId, t.legacyBatchLabel), meta: t.date,
+              values: [
+                { label: 'pH in / out', value: `${t.phIn} / ${t.phOut ?? '—'}` },
+                { label: 'EC in / out', value: `${t.ecIn} / ${t.ecOut ?? '—'}`, unit: 'mS cm⁻¹' },
+                { label: 'Leachate', value: t.volumeMl ?? '—', unit: 'mL' },
+                { label: 'LF', value: t.volumeMl != null && t.appliedMl ? leachingFraction(t.volumeMl, t.appliedMl)!.toFixed(2) : '—' },
+              ],
+            }))} />
+          )}
+        </>
       )}
 
-      {tab==='leachate' && (leachLogs.length===0 ? <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><Beaker className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No leachate data.</p></div>
-      : leachLogs.map(l=>(<div key={l.id} className="bento-card p-4 bg-white/90 border border-gray-200">
-        <div className="flex justify-between items-center mb-3"><span className="font-mono-sci text-[10px] font-bold text-lime-600">{l.id}</span><span className="font-mono-sci text-[10px] text-gray-400">{l.date}</span></div>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-blue-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.phIn}</div><div className="text-[8px] text-gray-400">pH In</div></div>
-          <div className="bg-amber-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.phOut}</div><div className="text-[8px] text-gray-400">pH Out</div></div>
-          <div className="bg-blue-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.ecIn}</div><div className="text-[8px] text-gray-400">EC In</div></div>
-          <div className="bg-amber-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.ecOut}</div><div className="text-[8px] text-gray-400">EC Out</div></div>
-        </div>
-        <div className="text-[8px] text-gray-400 font-mono-sci mt-2">{l.createdBy} · {l.createdAt}</div>
-      </div>)))}
+      {tab === 'mixes' && (mixes.length === 0 ? <EmptyState icon={Layers} title="No substrate mixes yet" text="Save mix recipes by volume share so batches can refer to them." action={<Button onClick={mf.openForm}>Add mix</Button>} /> : (
+        <RecordList label="Substrate mixes" onDelete={id => repo.remove('substrateMixes', id)} rows={mixes.map(m => ({
+          id: m.id, title: m.name, meta: m.cec != null ? `CEC ${m.cec} cmol(+) kg⁻¹` : undefined,
+          note: (
+            <>
+              <span className="flex h-3 rounded-xs overflow-hidden mb-2" aria-hidden="true">
+                {m.components.map((c, i) => <span key={c.name} className={MIX_COLOURS[i % MIX_COLOURS.length]} style={{ width: `${c.pct}%` }} />)}
+              </span>
+              <span className="flex flex-wrap gap-x-3 gap-y-1">
+                {m.components.map((c, i) => <span key={c.name} className="flex items-center gap-1"><span className={`w-2 h-2 rounded-xs ${MIX_COLOURS[i % MIX_COLOURS.length]}`} />{c.name} <span className="font-mono-sci">{c.pct} %</span></span>)}
+              </span>
+            </>
+          ),
+        }))} />
+      ))}
 
-      {tab==='substrate' && (profiles.length===0 ? <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><Layers className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No substrate profiles.</p></div>
-      : profiles.map(p=>(<div key={p.id} className="bento-card p-4 bg-white/90 border border-gray-200">
-        <div className="flex justify-between items-center mb-3"><span className="font-mono-sci text-[10px] font-bold text-lime-600">{p.id}</span><span className="font-mono-sci text-[10px] text-gray-500 font-bold">{p.name}</span></div>
-        <div className="flex gap-1 h-6 rounded-full overflow-hidden mb-3">{p.components.map((c,i)=>{const colors=['bg-amber-400','bg-emerald-400','bg-gray-300','bg-blue-300','bg-orange-300','bg-pink-300']; return <div key={i} className={`${colors[i%colors.length]} relative group`} style={{width:`${c.pct}%`}} title={`${c.name}: ${c.pct}%`}/>})}</div>
-        <div className="flex flex-wrap gap-2">{p.components.map((c,i)=>(<span key={i} className="text-[9px] font-mono-sci font-bold text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{c.name}: {c.pct}%</span>))}</div>
-        <div className="text-[9px] font-mono-sci text-gray-500 mt-2">CEC: {p.cec} cmol/kg</div>
-      </div>)))}
-    </div>
+      <Sheet open={lf.open} title="New leachate test" onClose={lf.close}>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField id="lt-date" type="date" label="Date" value={lf.values.date} onChange={lf.set('date')} />
+          <FieldShell id="lt-batch" label="Batch"><BatchSelect id="lt-batch" value={lf.values.batchId} onChange={lf.set('batchId')} /></FieldShell>
+        </div>
+        <FieldGroup title="Irrigation water (in)">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField id="lt-phin" type="number" step="0.01" label="pH" value={lf.values.phIn} onChange={lf.set('phIn')} placeholder="6.5" />
+            <TextField id="lt-ecin" type="number" step="0.01" label="EC" unit="mS cm⁻¹" value={lf.values.ecIn} onChange={lf.set('ecIn')} placeholder="1.2" />
+            <TextField id="lt-applied" type="number" step="1" label="Volume applied" unit="mL" value={lf.values.appliedMl} onChange={lf.set('appliedMl')} />
+          </div>
+        </FieldGroup>
+        <FieldGroup title="Leachate (out)">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField id="lt-phout" type="number" step="0.01" label="pH" value={lf.values.phOut} onChange={lf.set('phOut')} placeholder="5.8" />
+            <TextField id="lt-ecout" type="number" step="0.01" label="EC" unit="mS cm⁻¹" value={lf.values.ecOut} onChange={lf.set('ecOut')} placeholder="2.4" />
+            <TextField id="lt-vol" type="number" step="1" label="Volume collected" unit="mL" value={lf.values.volumeMl} onChange={lf.set('volumeMl')} />
+          </div>
+        </FieldGroup>
+        <FormError message={lf.error} />
+        <Button block onClick={saveTest} disabled={lf.saving}>Save test</Button>
+      </Sheet>
+
+      <Sheet open={mf.open} title="New substrate mix" onClose={mf.close}>
+        <TextField id="mix-name" label="Mix name" value={mf.values.name} onChange={mf.set('name')} placeholder="Standard conifer mix" />
+        <fieldset className="space-y-2">
+          <legend className="sci-label">Components by volume <span className={`ml-1 font-mono-sci normal-case tracking-normal ${Math.abs(totalPct - 100) < 0.5 ? 'text-green-700' : 'text-red-600'}`}>({totalPct} % of 100)</span></legend>
+          {mf.values.components.map((c, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <input aria-label={`Component ${i + 1} name`} value={c.name} onChange={e => setComp(i, 'name', e.target.value)} className={`${controlCls} mt-0 flex-1`} />
+              <input aria-label={`Component ${i + 1} share (%)`} type="number" value={c.pct} onChange={e => setComp(i, 'pct', e.target.value)} className={`${controlCls} mt-0 w-20 font-mono-sci`} />
+              <button aria-label={`Remove component ${i + 1}`} onClick={() => mf.set('components')(mf.values.components.filter((_, j) => j !== i))} className="p-2 text-gray-500 hover:text-red-600"><X className="w-4 h-4" /></button>
+            </div>
+          ))}
+          <Button size="sm" variant="secondary" onClick={() => mf.set('components')([...mf.values.components, { name: '', pct: '' }])}>Add component</Button>
+        </fieldset>
+        <TextField id="mix-cec" type="number" step="0.1" label="Cation exchange capacity" unit="cmol(+) kg⁻¹" value={mf.values.cec} onChange={mf.set('cec')} />
+        <FormError message={mf.error} />
+        <Button block onClick={saveMix} disabled={mf.saving}>Save mix</Button>
+      </Sheet>
+    </Page>
   );
 };
+
 export default SubstratePage;

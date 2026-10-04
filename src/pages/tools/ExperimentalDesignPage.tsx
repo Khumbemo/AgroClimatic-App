@@ -1,126 +1,257 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, FlaskConical, Shuffle, EyeOff, Sparkles, Loader2 } from 'lucide-react';
-import { aiService } from '../../services/ai';
+import { useState } from 'react';
+import { Plus, X, FlaskConical, Shuffle, EyeOff, Sparkles, Loader2, Eye, RefreshCw } from 'lucide-react';
+import { useCollection, useData } from '../../data/hooks';
+import type { Experiment } from '../../data/schema';
+import { aiService, AI_ENABLED } from '../../services/ai';
+import { DESIGN_LABELS, designProblem, generateLayout, newSeed, type DesignType } from '../../utils/trialDesign';
+import { Page, PageHeader, Section } from '../../components/ui/Page';
+import { Chip, EmptyState, Notice } from '../../components/ui/Display';
+import { SelectField, TextField, Label, controlCls } from '../../components/ui/Field';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import FormError from '../../components/data/FormError';
+import { useRecordForm } from '../../components/ui/useRecordForm';
+import { saveErrorMessage } from '../../data/errors';
 
-type DesignType = 'CRD' | 'RCBD' | 'Latin_Square' | 'Split_Plot';
-interface Experiment {
-  id: string; name: string; designType: DesignType; blocks: number; replicates: number;
-  treatments: string[]; assignments: { block: number; position: number; treatment: string; code: string }[];
-  blindMode: boolean; createdAt: string; createdBy: string;
-}
-const designLabels: Record<DesignType, string> = { CRD:'Completely Randomized Design', RCBD:'Randomized Complete Block Design', Latin_Square:'Latin Square', Split_Plot:'Split-Plot Design' };
+const DESIGNS = Object.entries(DESIGN_LABELS).map(([value, label]) => ({ value, label }));
 
-const ExperimentalDesignPage = () => {
-  const navigate = useNavigate();
-  const [experiments, setExperiments] = useState<Experiment[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name:'', designType:'RCBD' as DesignType, blocks:'3', replicates:'4', treatmentInput:'', treatments:[] as string[], blindMode:false });
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
+const repsLabel = (d: DesignType) => (d === 'CRD' ? 'Replicates per treatment' : d === 'Latin_Square' ? '' : 'Blocks (replicates)');
 
-  useEffect(() => { const s = localStorage.getItem('ac_experiments'); if(s) setExperiments(JSON.parse(s)); }, []);
-
-  const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) return;
-    setIsAiLoading(true);
-    const result = await aiService.generateExperimentalDesign(aiPrompt);
-    if (result) {
-      setForm({
-        ...form,
-        name: result.name || form.name,
-        designType: (result.designType as DesignType) || form.designType,
-        blocks: result.blocks?.toString() || form.blocks,
-        replicates: result.replicates?.toString() || form.replicates,
-        treatments: result.treatments || form.treatments
-      });
-    }
-    setIsAiLoading(false);
+/** Treatment list editor: type a name, press Add or Enter. */
+const LevelEditor = ({ id, label, levels, onChange }: { id: string; label: string; levels: string[]; onChange: (l: string[]) => void }) => {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const v = draft.trim();
+    if (!v) return;
+    onChange([...levels, v]);
+    setDraft('');
   };
-
-  const addTreatment = () => { if(!form.treatmentInput.trim()) return; setForm({...form, treatments:[...form.treatments, form.treatmentInput.trim()], treatmentInput:''}); };
-  const removeTreatment = (i:number) => setForm({...form, treatments:form.treatments.filter((_,j)=>j!==i)});
-
-  const shuffle = <T,>(a:T[]):T[] => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
-
-  const saveExperiment = () => {
-    if(!form.name || form.treatments.length<2) return;
-    const blocks = parseInt(form.blocks)||3;
-    const assignments: Experiment['assignments'] = [];
-    for(let b=0;b<blocks;b++){
-      const sh = shuffle(form.treatments.map((t,i)=>({treatment:t, code:`TRT-${String.fromCharCode(65+i)}`})));
-      sh.forEach((s,pos)=> assignments.push({block:b+1, position:pos+1, treatment:s.treatment, code:s.code}));
-    }
-    const exp:Experiment = { id:`EXP-${Date.now()}`, name:form.name, designType:form.designType, blocks, replicates:parseInt(form.replicates)||4, treatments:form.treatments, assignments, blindMode:form.blindMode, createdAt:new Date().toISOString(), createdBy:'Nursery Manager' };
-    const updated = [exp,...experiments]; setExperiments(updated); localStorage.setItem('ac_experiments', JSON.stringify(updated));
-    setShowForm(false); setForm({name:'',designType:'RCBD',blocks:'3',replicates:'4',treatmentInput:'',treatments:[],blindMode:false});
-  };
-
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex items-center gap-3">
-        <button onClick={()=>navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-5 h-5 text-gray-600"/></button>
-        <div className="flex-1"><h1 className="text-2xl font-black text-gray-900 tracking-tight">Experimental Design</h1></div>
-        <button onClick={()=>setShowForm(true)} className="bg-gradient-to-r from-violet-500 to-purple-600 text-white p-2.5 rounded-xl shadow-lg shadow-violet-500/30 hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
+    <div>
+      <Label htmlFor={id} label={label} />
+      <div className="flex gap-2">
+        <input id={id} value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} placeholder="e.g. GA₃ 250 ppm" className={controlCls} />
+        <Button variant="secondary" className="mt-1.5" onClick={add}>Add</Button>
       </div>
-
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-black text-lg">New Experiment</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
-            
-            <div className="mb-5 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-xl border border-violet-100">
-              <div className="flex items-center gap-2 mb-2 text-violet-700 font-bold text-xs"><Sparkles className="w-4 h-4"/> AI Auto-Generate</div>
-              <div className="flex gap-2">
-                <input type="text" placeholder="e.g. test 3 fertilizers in 4 blocks..." value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} className="flex-1 bg-white border border-violet-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-violet-400" disabled={isAiLoading}/>
-                <button onClick={handleAiGenerate} disabled={isAiLoading||!aiPrompt.trim()} className="bg-violet-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-violet-700 disabled:opacity-50 min-w-[70px] flex justify-center">
-                  {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate'}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Experiment Name</label><input type="text" placeholder="Fertilizer Response Trial" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Statistical Design</label>
-                <select value={form.designType} onChange={e=>setForm({...form,designType:e.target.value as DesignType})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none">{Object.entries(designLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Blocks</label><input type="number" value={form.blocks} onChange={e=>setForm({...form,blocks:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
-                <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Reps / Block</label><input type="number" value={form.replicates} onChange={e=>setForm({...form,replicates:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/></div>
-              </div>
-              <div><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Treatments</label>
-                <div className="flex gap-2 mt-1"><input type="text" placeholder="e.g. NPK 20-20-20" value={form.treatmentInput} onChange={e=>setForm({...form,treatmentInput:e.target.value})} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addTreatment();}}} className="flex-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-violet-400 outline-none"/><button onClick={addTreatment} className="px-4 bg-violet-100 text-violet-700 rounded-xl font-black text-xs">Add</button></div>
-                <div className="flex flex-wrap gap-2 mt-2">{form.treatments.map((t,i)=>(<span key={i} className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 px-3 py-1 rounded-full text-[10px] font-bold border border-violet-200">TRT-{String.fromCharCode(65+i)}: {t}<button onClick={()=>removeTreatment(i)}><X className="w-3 h-3"/></button></span>))}</div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <EyeOff className="w-5 h-5 text-gray-400"/><div className="flex-1"><p className="text-sm font-bold">Blind Testing Mode</p><p className="text-[10px] text-gray-500">Hide treatment names from collectors</p></div>
-                <button onClick={()=>setForm({...form,blindMode:!form.blindMode})} className={`w-12 h-6 rounded-full transition-colors ${form.blindMode?'bg-violet-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.blindMode?'translate-x-6':'translate-x-0.5'}`}/></button>
-              </div>
-              <button onClick={saveExperiment} className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">Create & Randomize</button>
-            </div>
-          </div>
-        </div>
+      {levels.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5 mt-2">
+          {levels.map((t, i) => (
+            <li key={`${t}-${i}`} className="flex items-center gap-1 text-xs bg-green-50 text-green-900 border border-green-200 rounded-sm px-2 py-1">
+              <span className="font-mono-sci text-green-700">T{i + 1}</span> {t}
+              <button onClick={() => onChange(levels.filter((_, j) => j !== i))} aria-label={`Remove ${t}`} className="ml-0.5 text-green-700 hover:text-red-600"><X className="w-3 h-3" /></button>
+            </li>
+          ))}
+        </ul>
       )}
-
-      {experiments.length===0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><FlaskConical className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No experiments configured.</p></div>
-      ) : experiments.map(exp=>(
-        <div key={exp.id} className="bento-card p-4 bg-white/90 border border-gray-200 space-y-4">
-          <div><span className="font-mono-sci text-[10px] font-bold text-violet-600">{exp.id}</span><h3 className="font-black text-lg text-gray-900 mt-1">{exp.name}</h3>
-            <div className="flex gap-2 mt-1"><span className="text-[9px] bg-violet-50 text-violet-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-violet-100">{designLabels[exp.designType]}</span>{exp.blindMode && <span className="text-[9px] bg-amber-50 text-amber-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1"><EyeOff className="w-3 h-3"/> BLIND</span>}</div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.blocks}</div><div className="text-[8px] text-gray-400 uppercase">Blocks</div></div>
-            <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.treatments.length}</div><div className="text-[8px] text-gray-400 uppercase">Treatments</div></div>
-            <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-lg font-bold">{exp.replicates}</div><div className="text-[8px] text-gray-400 uppercase">Reps</div></div>
-          </div>
-          <div><h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1"><Shuffle className="w-3 h-3"/> Randomized Assignment</h4>
-            <table className="w-full text-[10px] font-mono-sci"><thead><tr className="border-b border-gray-200"><th className="py-1 px-2 text-left text-gray-400">Block</th><th className="py-1 px-2 text-left text-gray-400">Pos</th><th className="py-1 px-2 text-left text-gray-400">Code</th>{!exp.blindMode&&<th className="py-1 px-2 text-left text-gray-400">Treatment</th>}</tr></thead>
-              <tbody>{exp.assignments.map((a,i)=>(<tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="py-1.5 px-2 font-bold">{a.block}</td><td className="py-1.5 px-2">{a.position}</td><td className="py-1.5 px-2 text-violet-600 font-bold">{a.code}</td>{!exp.blindMode&&<td className="py-1.5 px-2 text-gray-600">{a.treatment}</td>}</tr>))}</tbody></table>
-          </div>
-          <div className="text-[8px] text-gray-400 font-mono-sci border-t border-gray-100 pt-2">{exp.createdBy} · {exp.createdAt}</div>
-        </div>
-      ))}
     </div>
   );
 };
+
+/** Field map: one row per block (or Latin-square row), one cell per plot. */
+const FieldMap = ({ exp, reveal }: { exp: Experiment; reveal: boolean }) => {
+  const isLatin = exp.designType === 'Latin_Square';
+  const rowsOf = (r: number) => exp.assignments.filter(a => (isLatin ? a.row === r : a.block === r)).sort((a, b) => (isLatin ? (a.col ?? 0) - (b.col ?? 0) : a.position - b.position));
+  const rowIds = [...new Set(exp.assignments.map(a => (isLatin ? a.row ?? 0 : a.block)))].sort((a, b) => a - b);
+  const show = (a: Experiment['assignments'][number]) =>
+    exp.blindMode && !reveal ? `${a.code}${a.subCode ? `·${a.subCode}` : ''}` : `${a.treatment}${a.subTreatment ? ` · ${a.subTreatment}` : ''}`;
+  return (
+    <div className="overflow-x-auto -mx-1 px-1">
+      <table className="border-separate border-spacing-1 text-[11px]">
+        <tbody>
+          {rowIds.map(r => (
+            <tr key={r}>
+              <th scope="row" className="pr-1 text-left font-mono-sci text-gray-500 font-normal whitespace-nowrap">{isLatin ? `Row ${r}` : exp.designType === 'CRD' ? 'Plots' : `Block ${r}`}</th>
+              {rowsOf(r).map(a => (
+                <td key={`${a.block}-${a.position}-${a.row}-${a.col}`} className="min-w-18 max-w-32 align-top bg-green-50 border border-green-200 rounded-sm px-1.5 py-1 text-green-950">
+                  <span className="block font-mono-sci text-[10px] text-green-700">#{a.plot ?? a.position}</span>
+                  <span className="block truncate" title={show(a)}>{show(a)}</span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const ExperimentCard = ({ exp }: { exp: Experiment }) => {
+  const { repo } = useData();
+  const [reveal, setReveal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const legacy = exp.layoutVersion !== 2;
+  const plots = exp.assignments.length;
+
+  const rerandomise = async () => {
+    const seed = newSeed();
+    // Pre-fix records kept the number of blocks in `blocks`; CRD used `replicates`.
+    const replicates = exp.designType === 'Latin_Square' ? exp.treatments.length
+      : exp.designType === 'CRD' || exp.layoutVersion === 2 ? exp.replicates : exp.blocks;
+    const problem = designProblem({ designType: exp.designType, treatments: exp.treatments, replicates, subTreatments: exp.subTreatments });
+    if (problem) { setError(problem); return; }
+    try {
+      await repo.update('experiments', exp.id, {
+        seed, layoutVersion: 2, replicates, blocks: exp.designType === 'CRD' ? 1 : replicates,
+        assignments: generateLayout({ designType: exp.designType, treatments: exp.treatments, replicates, subTreatments: exp.subTreatments, seed }),
+      });
+      setError(null);
+    } catch (e) { setError(saveErrorMessage(e)); }
+  };
+
+  return (
+    <Section>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-gray-900">{exp.name}</h3>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            <Chip tone="leaf">{DESIGN_LABELS[exp.designType]}</Chip>
+            {exp.blindMode && <Chip tone="warn"><EyeOff className="w-3 h-3 mr-1" />Blind codes</Chip>}
+            {exp.isExample && <Chip>Example</Chip>}
+          </div>
+        </div>
+        {!confirmDelete && <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(true)} aria-label="Delete experiment"><X className="w-4 h-4" /></Button>}
+      </div>
+
+      <dl className="grid grid-cols-3 gap-2 mt-3 text-center">
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">Treatments</dt><dd className="font-mono-sci text-gray-900">{exp.treatments.length}{exp.subTreatments?.length ? ` × ${exp.subTreatments.length}` : ''}</dd></div>
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">{exp.designType === 'Latin_Square' ? 'Rows × cols' : exp.designType === 'CRD' ? 'Replicates' : 'Blocks'}</dt><dd className="font-mono-sci text-gray-900">{exp.designType === 'Latin_Square' ? `${exp.treatments.length} × ${exp.treatments.length}` : exp.replicates}</dd></div>
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">Plots</dt><dd className="font-mono-sci text-gray-900">{plots}</dd></div>
+      </dl>
+
+      {legacy && (
+        <div className="mt-3">
+          <Notice>
+            This layout was made by an earlier version that randomised every design like an RCBD and ignored replicates. Re-randomise to get a correct {DESIGN_LABELS[exp.designType].toLowerCase()} layout.
+            <div className="mt-2"><Button size="sm" variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={rerandomise}>Re-randomise</Button></div>
+          </Notice>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="sci-label flex items-center gap-1"><Shuffle className="w-3 h-3" /> Field map</h4>
+          {exp.blindMode && (
+            <Button size="sm" variant="ghost" icon={reveal ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />} onClick={() => setReveal(r => !r)}>
+              {reveal ? 'Hide key' : 'Reveal key'}
+            </Button>
+          )}
+        </div>
+        <FieldMap exp={exp} reveal={reveal} />
+        {exp.blindMode && reveal && (
+          <ul className="mt-2 text-xs text-gray-700 space-y-0.5">
+            {exp.treatments.map((t, i) => <li key={t}><span className="font-mono-sci text-green-700">T{i + 1}</span> = {t}</li>)}
+            {exp.subTreatments?.map((t, i) => <li key={t}><span className="font-mono-sci text-green-700">S{i + 1}</span> = {t}</li>)}
+          </ul>
+        )}
+      </div>
+
+      <p className="text-[11px] text-gray-500 font-mono-sci mt-3">
+        Created {exp.createdAt.slice(0, 10)}{exp.seed != null ? ` · seed ${exp.seed}` : ''}
+      </p>
+      <FormError message={error} />
+      {confirmDelete && (
+        <div className="mt-3 flex items-center justify-end gap-2 bg-red-50 border border-red-200 rounded-md p-2">
+          <span className="text-xs text-red-800 mr-auto">Delete this experiment and its layout?</span>
+          <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          <Button size="sm" variant="danger" onClick={() => repo.remove('experiments', exp.id)}>Delete</Button>
+        </div>
+      )}
+    </Section>
+  );
+};
+
+type FormValues = { name: string; designType: DesignType; replicates: string; treatments: string[]; subTreatments: string[]; blindMode: boolean };
+
+const ExperimentalDesignPage = () => {
+  const { repo } = useData();
+  const experiments = [...useCollection('experiments').items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const form = useRecordForm<FormValues>(() => ({ name: '', designType: 'RCBD', replicates: '4', treatments: [], subTreatments: [], blindMode: false }));
+  const v = form.values;
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+
+  const suggest = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiBusy(true);
+    try {
+      const r = await aiService.generateExperimentalDesign(aiPrompt);
+      form.setValues(prev => ({
+        ...prev,
+        name: r.name ?? prev.name,
+        designType: r.designType && r.designType in DESIGN_LABELS ? r.designType : prev.designType,
+        replicates: r.replicates ? String(r.replicates) : prev.replicates,
+        treatments: Array.isArray(r.treatments) ? r.treatments.map(String) : prev.treatments,
+        subTreatments: Array.isArray(r.subTreatments) ? r.subTreatments.map(String) : prev.subTreatments,
+      }));
+      form.setError(null);
+    } catch (e) {
+      form.setError(`Suggestion failed: ${(e as Error).message}`);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const save = () =>
+    form.submit(async () => {
+      const t = v.treatments;
+      const isLatin = v.designType === 'Latin_Square';
+      const replicates = isLatin ? t.length : Number(v.replicates);
+      const subTreatments = v.designType === 'Split_Plot' ? v.subTreatments : undefined;
+      if (!v.name.trim()) throw new Error('Enter an experiment name.');
+      const problem = designProblem({ designType: v.designType, treatments: t, replicates, subTreatments });
+      if (problem) throw new Error(problem);
+      const seed = newSeed();
+      await repo.add('experiments', {
+        name: v.name, designType: v.designType, treatments: t, subTreatments, replicates,
+        blocks: v.designType === 'CRD' ? 1 : replicates,
+        assignments: generateLayout({ designType: v.designType, treatments: t, replicates, subTreatments, seed }),
+        blindMode: v.blindMode, seed, layoutVersion: 2,
+      });
+    });
+
+  return (
+    <Page>
+      <PageHeader
+        title="Experimental design"
+        subtitle="Randomised layouts for CRD, RCBD, Latin square and split-plot trials."
+        back="/tools"
+        actions={<Button icon={<Plus className="w-4 h-4" />} onClick={form.openForm}>New</Button>}
+      />
+
+      {experiments.length === 0 ? (
+        <EmptyState icon={FlaskConical} title="No experiments yet" text="Create a trial to get a randomised field map with blind treatment codes if needed." action={<Button onClick={form.openForm}>New experiment</Button>} />
+      ) : (
+        <div className="space-y-4">{experiments.map(e => <ExperimentCard key={e.id} exp={e} />)}</div>
+      )}
+
+      <Sheet open={form.open} title="New experiment" onClose={form.close}>
+        {AI_ENABLED && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-3 space-y-2">
+            <Label htmlFor="exp-ai" label="Describe the trial (AI suggestion)" />
+            <div className="flex gap-2">
+              <input id="exp-ai" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Compare 3 substrates on Pinus seedling growth" className={controlCls} />
+              <Button variant="secondary" className="mt-1.5" onClick={suggest} disabled={aiBusy} icon={aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}>Suggest</Button>
+            </div>
+            <p className="text-[11px] text-gray-600">Check the suggestion before creating the layout.</p>
+          </div>
+        )}
+        <TextField id="exp-name" label="Experiment name" value={v.name} onChange={form.set('name')} placeholder="Substrate × nitrogen trial 2026" />
+        <SelectField id="exp-design" label="Design" value={v.designType} onChange={d => form.set('designType')(d as DesignType)} options={DESIGNS} />
+        <LevelEditor id="exp-treatments" label={v.designType === 'Split_Plot' ? 'Main-plot levels' : 'Treatments'} levels={v.treatments} onChange={form.set('treatments')} />
+        {v.designType === 'Split_Plot' && <LevelEditor id="exp-sub" label="Sub-plot levels" levels={v.subTreatments} onChange={form.set('subTreatments')} />}
+        {v.designType === 'Latin_Square'
+          ? <p className="text-xs text-gray-600">A Latin square uses as many rows and columns as treatments ({v.treatments.length || 't'} × {v.treatments.length || 't'}).</p>
+          : <TextField id="exp-reps" type="number" step="1" min={2} label={repsLabel(v.designType)} value={v.replicates} onChange={form.set('replicates')} />}
+        <label className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 cursor-pointer">
+          <input type="checkbox" checked={v.blindMode} onChange={e => form.set('blindMode')(e.target.checked)} className="mt-0.5 w-4 h-4 accent-green-700" />
+          <span className="text-sm text-gray-800">Blind codes<span className="block text-xs text-gray-500">Show T1, T2 … on the field map so people recording data don't see treatment names.</span></span>
+        </label>
+        <FormError message={form.error} />
+        <Button block onClick={save} disabled={form.saving} icon={<Shuffle className="w-4 h-4" />}>Create and randomise</Button>
+      </Sheet>
+    </Page>
+  );
+};
+
 export default ExperimentalDesignPage;

@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# AgroClimatic
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nursery research app for forest-seedling production: greenhouse climate, seed lots, sowing
+batches, germination, growth, treatments, mortality and trial design. React + TypeScript +
+Vite, packaged for Android with Capacitor.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Type-check and production build (`dist/`) |
+| `npm run build:artifact` | Single-file demo build (`artifact/agroclimatic.html`) |
+| `npm test` | Unit tests (Vitest) |
+| `npm run lint` | ESLint |
 
-## React Compiler
+## Data
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+All records go through one validated, offline-first data layer in `src/data/`.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+Species ─< SeedLot ─< Batch ─< germination counts, growth measurements,
+                              fertigation, pest observations, pre-sowing
+                              treatments, mortality, leachate tests
+Greenhouse ─< bench placements ─> Batch
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Schema** (`schema.ts`): zod schemas with units and valid ranges for every collection.
+  Every save is validated; errors are shown on the form.
+- **Storage**: with Firebase configured, records live at `users/{uid}/{collection}` in
+  Firestore with the offline cache (writes apply locally and sync later). Without Firebase
+  keys the app runs in demo mode and keeps records in browser storage.
+- **Security** (`firestore.rules`): a user can only read and write their own records.
+- **Upgrade from earlier versions** (`migrateLegacy.ts`): records saved by the old
+  per-tool storage are moved once. Free-text batch labels are linked to matching batches
+  or to placeholder batches flagged "needs review". Original data is never deleted, and
+  records with out-of-range values are kept aside rather than dropped.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Science
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Formulas live in `src/utils/calculations.ts` and trial layouts in `src/utils/trialDesign.ts`;
+both are unit-tested against hand-worked values (`npm test`).
+
+- Germination: final %, mean germination time Σ(tᵢnᵢ)/Σnᵢ, speed index Σ(nᵢ/tᵢ) (Maguire
+  1962), germination energy by day 7 after sowing (Ranal & Santana 2006 definitions).
+- Seedling quality: sturdiness H/D, shoot : root, Dickson quality index (Dickson et al. 1960),
+  relative growth rate.
+- Climate: VPD (Tetens), dew point (Magnus), daily light integral, growing degree days.
+- Fertigation: dose for a target ppm, leaching fraction.
+- Trials: seeded, reproducible CRD, RCBD, Latin square and split-plot randomisation.
+
+## Backup
+
+Settings → Data exports every collection as JSON and restores it (validated, upserted by id).
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in the Firebase web-app keys. Leave them unset for
+demo mode. Optional: `VITE_GEMINI_API_KEY` enables AgroBot's open questions (model
+`gemini-flash-latest`, override with `VITE_GEMINI_MODEL`). The key ships inside the app, so
+restrict it to your domains/app in Google Cloud.
+
+## Known issue
+
+`npm audit` reports the `tar` package used by Capacitor CLI 6 (only when running `cap`
+commands on a developer machine; not part of the app). Fixing it needs Capacitor 8 and an
+Android project migration, which should be done with an Android build to test against.

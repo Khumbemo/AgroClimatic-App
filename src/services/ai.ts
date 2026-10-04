@@ -1,101 +1,72 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+/*
+  Gemini access through the public REST API (no SDK).
 
-// Initialize the Gemini API client
-// Note: In a real production app, you'd want to call a backend to avoid exposing your API key,
-// but for this demo/prototype, we use the VITE_GEMINI_API_KEY from env.
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'dummy_key';
-const genAI = new GoogleGenerativeAI(apiKey);
+  Model: `gemini-flash-latest` is Google's alias for the current Flash model, so the app is not
+  broken when a numbered model is retired (as gemini-1.5-flash was). Override with
+  VITE_GEMINI_MODEL if needed.
 
-// We use gemini-1.5-flash as the default for text and multimodal tasks
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  Security note: a key in VITE_GEMINI_API_KEY is shipped inside the app. Restrict it in Google
+  Cloud (HTTP referrers / Android app) or route calls through a backend for production.
+*/
+
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+const MODEL = (import.meta.env.VITE_GEMINI_MODEL as string | undefined) || 'gemini-flash-latest';
+
+/** True when a Gemini key is configured; otherwise features fall back to offline behaviour. */
+export const AI_ENABLED = Boolean(API_KEY) && API_KEY !== 'your_api_key';
+export const AI_MODEL = MODEL;
+
+export class AiUnavailableError extends Error {
+  constructor() {
+    super('AI features need a Gemini API key (VITE_GEMINI_API_KEY).');
+    this.name = 'AiUnavailableError';
+  }
+}
+
+type GenerateOptions = { system?: string; json?: boolean };
+
+/** One-shot text generation. Throws AiUnavailableError without a key, Error on API failure. */
+export async function generateText(prompt: string, { system, json }: GenerateOptions = {}): Promise<string> {
+  if (!AI_ENABLED) throw new AiUnavailableError();
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY! },
+    body: JSON.stringify({
+      ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      ...(json ? { generationConfig: { responseMimeType: 'application/json' } } : {}),
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.error?.message || `Gemini request failed (HTTP ${res.status})`);
+  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('');
+  if (!text) throw new Error('The model returned no text.');
+  return text;
+}
+
+export type DesignSuggestion = {
+  name?: string;
+  designType?: 'CRD' | 'RCBD' | 'Latin_Square' | 'Split_Plot';
+  replicates?: number;
+  treatments?: string[];
+  subTreatments?: string[];
+};
 
 export const aiService = {
-  /**
-   * General purpose chatbot for Agronomy & Forestry
-   */
-  async askAgroBot(query: string, history: {role: string, parts: {text: string}[]}[] = []) {
-    try {
-      const chat = model.startChat({
-        history: history,
-        systemInstruction: "You are AgroBot, an expert assistant in precision forestry and agronomy. You help nursery managers analyze microclimate data, germination rates, substrates, and experimental designs. Be concise, highly technical, and practical."
-      });
-      const result = await chat.sendMessage(query);
-      return result.response.text();
-    } catch (error) {
-      console.error("Error in askAgroBot:", error);
-      return "I encountered an error analyzing that request. Please ensure your Gemini API key is configured correctly.";
-    }
+  async generateExperimentalDesign(request: string): Promise<DesignSuggestion> {
+    const text = await generateText(
+      `Suggest a nursery experiment for this request: "${request}".
+Return JSON: {"name": string, "designType": "CRD" | "RCBD" | "Latin_Square" | "Split_Plot", "replicates": number, "treatments": string[], "subTreatments": string[]}.
+Use subTreatments only for Split_Plot (sub-plot factor levels). For Latin_Square, replicates equals the number of treatments.`,
+      { system: 'You are an experimental-design specialist for forest nursery trials. Be conservative and practical.', json: true },
+    );
+    return JSON.parse(text) as DesignSuggestion;
   },
 
-  /**
-   * Analyzes an anomaly log and suggests a remediation
-   */
-  async analyzeDiagnostics(logText: string) {
-    try {
-      const prompt = `Analyze this nursery diagnostic log and provide a concise, actionable 1-sentence remediation step: "${logText}"`;
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    } catch (error) {
-      console.error("Error in analyzeDiagnostics:", error);
-      return "Check parameters manually due to API timeout.";
-    }
+  async analyzeDataInsights(dataSummary: string): Promise<string> {
+    return generateText(
+      `Interpret this nursery data in one short paragraph. State what the numbers show, one practical next step, and any caveat about sample size: ${dataSummary}`,
+      { system: 'You are a seed and nursery scientist. Do not invent data that is not in the summary.' },
+    );
   },
-
-  /**
-   * Generates experimental design parameters from a text prompt
-   */
-  async generateExperimentalDesign(prompt: string) {
-    try {
-      const fullPrompt = `You are an expert agronomist. Based on this request: "${prompt}", generate an experimental design.
-      Return ONLY a valid JSON object with the following structure (no markdown tags, no explanations):
-      {
-        "name": "A suitable name",
-        "designType": "CRD" | "RCBD" | "Latin_Square" | "Split_Plot",
-        "blocks": number,
-        "replicates": number,
-        "treatments": ["treatment 1", "treatment 2"]
-      }`;
-      const result = await model.generateContent(fullPrompt);
-      const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(text);
-    } catch (error) {
-      console.error("Error generating design:", error);
-      return null;
-    }
-  },
-
-  /**
-   * Simulates a vision analysis of a plant image
-   */
-  async analyzeMorphometrics(imageFile: File) {
-     // For a real implementation, you'd convert the File to base64 and use gemini-1.5-flash
-     // Since file reading is async, we'll simulate a generic response for this prototype
-     try {
-        const prompt = "Analyze this plant seedling. Estimate the caliper and shoot-to-root ratio. Determine if it passes the target caliper of >4.0mm and S/R ratio of <1.5. Output a brief JSON: { \"caliper\": number, \"srRatio\": number, \"passed\": boolean }";
-        
-        // Simulating the AI response for the UI workflow
-        return {
-           caliper: 4.2,
-           srRatio: 1.3,
-           passed: true,
-           message: "AI Vision analysis complete. The seedling passes morphometric requirements based on estimated dimensions."
-        };
-     } catch (e) {
-       return null;
-     }
-  },
-
-  /**
-   * Generates actionable insights from data summaries
-   */
-  async analyzeDataInsights(dataSummary: string) {
-    try {
-      const prompt = `You are an expert agronomist. Analyze this nursery data summary and provide a concise, actionable insight in one short paragraph: "${dataSummary}"`;
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    } catch (error) {
-      console.error("Error analyzing data:", error);
-      return "Unable to generate insights at this time.";
-    }
-  }
 };

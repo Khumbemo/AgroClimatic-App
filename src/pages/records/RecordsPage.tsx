@@ -1,35 +1,43 @@
-import React from 'react';
-import { ClipboardList, Thermometer, FlaskConical, Bug, Droplets, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ClipboardList, Thermometer, FlaskConical, Bug, Droplets, ChevronRight, Beaker, Sprout } from 'lucide-react';
+import { useCollection } from '../../data/hooks';
+import type { CollectionName } from '../../data/schema';
+import { Page, PageHeader } from '../../components/ui/Page';
 
-const RecordsPage: React.FC = () => {
-  const logs = [
-    { title: 'Seed Lots', icon: ClipboardList, color: 'text-green-600', bg: 'bg-green-50', to: '/records/seeds', desc: 'Provenance & stock tracking' },
-    { title: 'Climate Log', icon: Thermometer, color: 'text-orange-600', bg: 'bg-orange-50', to: '/records/climate', desc: 'Temp, humidity & PAR data' },
-    { title: 'Nutrition Log', icon: FlaskConical, color: 'text-purple-600', bg: 'bg-purple-50', to: '/records/nutrition', desc: 'NPK, EC & pH management' },
-    { title: 'Pest & Disease', icon: Bug, color: 'text-red-600', bg: 'bg-red-50', to: '/records/pest', desc: 'Incident reporting & history' },
-    { title: 'Irrigation Log', icon: Droplets, color: 'text-blue-600', bg: 'bg-blue-50', to: '/records/irrigation', desc: 'Volume & scheduling' },
-  ];
+const LOGS: { title: string; desc: string; to: string; icon: typeof Sprout; col: CollectionName }[] = [
+  { title: 'Seed lots', desc: 'Stock, moisture content, viability', to: '/records/seeds', icon: ClipboardList, col: 'seedLots' },
+  { title: 'Nursery batches', desc: 'Sowings and their linked records', to: '/nursery', icon: Sprout, col: 'batches' },
+  { title: 'Climate log', desc: 'Temperature, humidity, light, CO₂', to: '/tools/environmental', icon: Thermometer, col: 'climateReadings' },
+  { title: 'Nutrition log', desc: 'Fertigation doses, pH and EC', to: '/tools/treatments?tab=fertilizer', icon: FlaskConical, col: 'fertigationEvents' },
+  { title: 'Pest & disease', desc: 'Scouting incidence and severity', to: '/tools/treatments?tab=pest', icon: Bug, col: 'pestObservations' },
+  { title: 'Irrigation log', desc: 'Volume and method', to: '/tools/irrigation', icon: Droplets, col: 'irrigationEvents' },
+  { title: 'Leachate tests', desc: 'Pour-through pH and EC', to: '/tools/substrate', icon: Beaker, col: 'leachateTests' },
+];
 
+const Row = ({ log }: { log: (typeof LOGS)[number] }) => {
+  const { items } = useCollection(log.col);
   return (
-    <div className="space-y-7">
-      <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Records</h1>
-
-      <div className="grid gap-5">
-        {logs.map((log) => (
-          <Link key={log.title} to={log.to} className="bg-white p-6 rounded-[36px] shadow-sm border border-gray-100 flex items-center gap-5 hover:border-gray-300 transition-all active:scale-[0.98] group">
-            <div className={`p-5 rounded-3xl ${log.bg} group-active:scale-90 transition-transform shadow-sm`}>
-              <log.icon className={`w-7 h-7 ${log.color}`} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-black text-gray-800 text-lg tracking-tight uppercase leading-none">{log.title}</h3>
-              <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-wider">{log.desc}</p>
-            </div>
-            <ChevronRight className="w-6 h-6 text-gray-200" />
-          </Link>
-        ))}
+    <Link to={log.to} className="flex items-center gap-3 px-4 py-3 hover:bg-green-50 transition-colors group">
+      <div className="w-9 h-9 rounded-md bg-green-50 border border-green-100 flex items-center justify-center shrink-0">
+        <log.icon className="w-[18px] h-[18px] text-green-700" strokeWidth={1.8} />
       </div>
-    </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium text-gray-900">{log.title}</h3>
+        <p className="text-xs text-gray-500 truncate">{log.desc}</p>
+      </div>
+      <span className="font-mono-sci text-sm text-gray-500">{items.length}</span>
+      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-green-700" />
+    </Link>
   );
 };
+
+const RecordsPage = () => (
+  <Page>
+    <PageHeader title="Records & logs" subtitle="Every log in one place, with the number of records in each." back="/tools" />
+    <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100 overflow-hidden">
+      {LOGS.map(l => <Row key={l.title} log={l} />)}
+    </div>
+  </Page>
+);
+
 export default RecordsPage;

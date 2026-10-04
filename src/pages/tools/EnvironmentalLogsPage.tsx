@@ -1,167 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ThermometerSun, Droplets, Sun, Wind, X } from 'lucide-react';
-import type { ClimateLog } from '../../types';
+import { Plus, ThermometerSun } from 'lucide-react';
+import { useCollection, useData, byDateDesc } from '../../data/hooks';
+import { calculateVPD, dailyLightIntegral, dewPoint, getVpdBand } from '../../utils/calculations';
+import { Page, PageHeader } from '../../components/ui/Page';
+import { Chip, ChartFrame, EmptyState, Stat, StatGrid } from '../../components/ui/Display';
+import { TextField, FieldGroup } from '../../components/ui/Field';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import RecordList from '../../components/ui/RecordList';
+import FormError from '../../components/data/FormError';
+import TimeSeriesChart from '../../components/charts/TimeSeriesChart';
+import { num, req, today, useRecordForm } from '../../components/ui/useRecordForm';
+import { vpdToneChip } from '../../components/sci/vpdTone';
+
+const fmt = (v: number | null | undefined, d = 1) => (v == null || Number.isNaN(v) ? '—' : v.toFixed(d));
 
 const EnvironmentalLogsPage = () => {
-  const navigate = useNavigate();
-  const [logs, setLogs] = useState<ClimateLog[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    tempMin: '',
-    tempMax: '',
-    tempMean: '',
-    humidity: '',
-    lightIntensity: '',
-    photoperiod: '',
-    co2: '',
-  });
+  const { repo } = useData();
+  const { items, ready } = useCollection('climateReadings');
+  const logs = [...items].sort(byDateDesc);
+  const chronological = [...logs].reverse().slice(-60);
+  const latest = logs[0];
+  const latestVpd = latest ? calculateVPD(latest.tempMean, latest.humidity) : null;
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ac_climate_logs');
-    if (saved) setLogs(JSON.parse(saved));
-  }, []);
-
-  const saveLog = () => {
-    if (!form.tempMin || !form.tempMax || !form.humidity) return;
-    const newLog: ClimateLog = {
-      id: `CL-${Date.now()}`,
-      date: form.date,
-      tempMin: parseFloat(form.tempMin),
-      tempMax: parseFloat(form.tempMax),
-      tempMean: form.tempMean ? parseFloat(form.tempMean) : (parseFloat(form.tempMin) + parseFloat(form.tempMax)) / 2,
-      humidity: parseFloat(form.humidity),
-      lightIntensity: parseFloat(form.lightIntensity) || 0,
-      photoperiod: parseFloat(form.photoperiod) || 0,
-      co2: form.co2 ? parseFloat(form.co2) : undefined,
-    };
-    const updated = [newLog, ...logs];
-    setLogs(updated);
-    localStorage.setItem('ac_climate_logs', JSON.stringify(updated));
-    setShowForm(false);
-    setForm({ date: new Date().toISOString().split('T')[0], tempMin: '', tempMax: '', tempMean: '', humidity: '', lightIntensity: '', photoperiod: '', co2: '' });
-  };
-
-  // Calculate VPD from latest log
-  const calcVPD = (temp: number, rh: number) => {
-    const svp = 0.6108 * Math.exp((17.27 * temp) / (temp + 237.3));
-    return ((1 - rh / 100) * svp).toFixed(2);
-  };
+  const form = useRecordForm(() => ({ date: today(), tempMin: '', tempMax: '', tempMean: '', humidity: '', lightIntensity: '', photoperiod: '', co2: '' }));
+  const v = form.values;
+  const save = () =>
+    form.submit(() => {
+      const tMin = req(v.tempMin), tMax = req(v.tempMax);
+      return repo.add('climateReadings', {
+        date: v.date, tempMin: tMin, tempMax: tMax,
+        // Daily mean defaults to (Tmin + Tmax) / 2 when not measured
+        tempMean: v.tempMean.trim() ? Number(v.tempMean) : (tMin + tMax) / 2,
+        humidity: req(v.humidity), lightIntensity: num(v.lightIntensity) ?? 0, photoperiod: num(v.photoperiod) ?? 0, co2: num(v.co2),
+      });
+    }, { keep: ['date'] });
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Environmental Logs</h1>
-          
-        </div>
-        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-2.5 rounded-xl shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform">
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+    <Page>
+      <PageHeader title="Environmental logs" subtitle="Daily greenhouse climate: temperature, humidity, light and CO₂." back="/tools"
+        actions={<Button icon={<Plus className="w-4 h-4" />} onClick={form.openForm}>New</Button>} />
 
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">New Climate Entry</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Date (ISO 8601)</label>
-                <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Min (°C)</label>
-                  <input type="number" step="0.1" placeholder="12.5" value={form.tempMin} onChange={e => setForm({...form, tempMin: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Max (°C)</label>
-                  <input type="number" step="0.1" placeholder="28.3" value={form.tempMax} onChange={e => setForm({...form, tempMax: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">T Mean (°C)</label>
-                  <input type="number" step="0.1" placeholder="Auto" value={form.tempMean} onChange={e => setForm({...form, tempMean: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RH (%)</label>
-                  <input type="number" step="0.1" placeholder="65.0" value={form.humidity} onChange={e => setForm({...form, humidity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">PAR (µmol/m²/s)</label>
-                  <input type="number" step="1" placeholder="450" value={form.lightIntensity} onChange={e => setForm({...form, lightIntensity: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Photoperiod (hrs)</label>
-                  <input type="number" step="0.5" placeholder="14" value={form.photoperiod} onChange={e => setForm({...form, photoperiod: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">CO₂ (ppm)</label>
-                  <input type="number" step="1" placeholder="420" value={form.co2} onChange={e => setForm({...form, co2: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none" />
-                </div>
-              </div>
-              <button onClick={saveLog} className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:shadow-xl transition-all">
-                Record Entry
-              </button>
-            </div>
-          </div>
-        </div>
+      {latest && (
+        <StatGrid cols={4}>
+          <Stat label="Mean temp" value={fmt(latest.tempMean)} unit="°C" note={`${latest.tempMin}–${latest.tempMax} °C · ${latest.date}`} />
+          <Stat label="Rel. humidity" value={fmt(latest.humidity, 0)} unit="%" />
+          <Stat label="VPD" value={fmt(latestVpd, 2)} unit="kPa" note={latestVpd != null ? getVpdBand(latestVpd).label : undefined} formula="Tetens, at mean temp" />
+          <Stat label="Dew point" value={fmt(dewPoint(latest.tempMean, latest.humidity))} unit="°C" formula="Magnus" />
+        </StatGrid>
       )}
 
-      {/* Log Entries */}
-      {logs.length === 0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
-          <ThermometerSun className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="font-bold text-sm text-gray-500">No climate entries recorded yet.</p>
-          
-        </div>
+      {chronological.length >= 2 && (
+        <ChartFrame title="Temperature and humidity" caption="Last 60 readings. Shaded line: daily mean temperature; dashed: minimum and maximum.">
+          <TimeSeriesChart
+            labels={chronological.map(r => r.date.slice(5))}
+            yTitle="°C" y1Title="RH %"
+            series={[
+              { label: 'T max', data: chronological.map(r => r.tempMax), color: 'red-500', dashed: true },
+              { label: 'T mean', data: chronological.map(r => r.tempMean), color: 'amber-500', fill: true },
+              { label: 'T min', data: chronological.map(r => r.tempMin), color: 'blue-500', dashed: true },
+              { label: 'RH', data: chronological.map(r => r.humidity), color: 'green-600', axis: 'y1' },
+            ]}
+          />
+        </ChartFrame>
+      )}
+
+      {ready && logs.length === 0 ? (
+        <EmptyState icon={ThermometerSun} title="No climate readings yet" text="Record daily minimum and maximum temperature and relative humidity. VPD, dew point and light integral are calculated for you." action={<Button onClick={form.openForm}>Add reading</Button>} />
       ) : (
-        <div className="space-y-3">
-          {logs.map(log => (
-            <div key={log.id} className="bento-card p-4 bg-white/90 border border-gray-200">
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-mono-sci text-[10px] font-bold text-orange-600">{log.id}</span>
-                <span className="font-mono-sci text-[10px] text-gray-400">{log.date}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <ThermometerSun className="w-3.5 h-3.5 text-red-400 mx-auto mb-1" />
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.tempMin}–{log.tempMax}°C</div>
-                  <div className="text-[8px] text-gray-400 uppercase">Temp Range</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <Droplets className="w-3.5 h-3.5 text-blue-400 mx-auto mb-1" />
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.humidity}%</div>
-                  <div className="text-[8px] text-gray-400 uppercase">RH</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <Sun className="w-3.5 h-3.5 text-yellow-400 mx-auto mb-1" />
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.lightIntensity || '—'}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">PAR</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <Wind className="w-3.5 h-3.5 text-green-400 mx-auto mb-1" />
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{calcVPD(log.tempMean, log.humidity)}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">VPD kPa</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <RecordList
+          label="Climate readings"
+          onDelete={id => repo.remove('climateReadings', id)}
+          rows={logs.map(r => {
+            const vpd = calculateVPD(r.tempMean, r.humidity);
+            const band = getVpdBand(vpd);
+            return {
+              id: r.id,
+              title: r.date,
+              badges: <>{<span className={`text-[11px] px-1.5 py-0.5 rounded-sm border ${vpdToneChip[band.tone]}`}>{band.label}</span>}{r.isExample && <Chip>Example</Chip>}</>,
+              values: [
+                { label: 'Temp', value: `${r.tempMin}–${r.tempMax}`, unit: '°C' },
+                { label: 'RH', value: r.humidity, unit: '%' },
+                { label: 'VPD', value: vpd.toFixed(2), unit: 'kPa' },
+                { label: 'DLI', value: r.lightIntensity && r.photoperiod ? dailyLightIntegral(r.lightIntensity, r.photoperiod).toFixed(1) : '—', unit: 'mol m⁻² d⁻¹' },
+                ...(r.co2 != null ? [{ label: 'CO₂', value: r.co2, unit: 'ppm' }] : []),
+              ],
+            };
+          })}
+        />
       )}
-    </div>
+
+      <Sheet open={form.open} title="New climate reading" onClose={form.close}>
+        <TextField id="cl-date" type="date" label="Date" value={v.date} onChange={form.set('date')} />
+        <FieldGroup title="Air temperature">
+          <div className="grid grid-cols-3 gap-3">
+            <TextField id="cl-min" type="number" step="0.1" label="Min" unit="°C" value={v.tempMin} onChange={form.set('tempMin')} placeholder="12.5" />
+            <TextField id="cl-max" type="number" step="0.1" label="Max" unit="°C" value={v.tempMax} onChange={form.set('tempMax')} placeholder="28.3" />
+            <TextField id="cl-mean" type="number" step="0.1" label="Mean" unit="°C" value={v.tempMean} onChange={form.set('tempMean')} placeholder="auto" />
+          </div>
+          <p className="text-[11px] text-gray-500">Leave mean blank to use (min + max) / 2.</p>
+        </FieldGroup>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField id="cl-rh" type="number" step="0.1" label="Rel. humidity" unit="%" value={v.humidity} onChange={form.set('humidity')} placeholder="65" />
+          <TextField id="cl-co2" type="number" step="1" label="CO₂" unit="ppm" value={v.co2} onChange={form.set('co2')} placeholder="420" />
+          <TextField id="cl-par" type="number" step="1" label="PAR" unit="µmol m⁻² s⁻¹" value={v.lightIntensity} onChange={form.set('lightIntensity')} placeholder="450" />
+          <TextField id="cl-photo" type="number" step="0.5" label="Photoperiod" unit="h" value={v.photoperiod} onChange={form.set('photoperiod')} placeholder="14" />
+        </div>
+        <FormError message={form.error} />
+        <Button block onClick={save} disabled={form.saving}>Save reading</Button>
+      </Sheet>
+    </Page>
   );
 };
 

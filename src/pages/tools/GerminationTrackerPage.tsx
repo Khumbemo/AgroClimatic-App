@@ -1,202 +1,157 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Sprout, X, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
-import type { GerminationLog } from '../../types';
-import { aiService } from '../../services/ai';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Sprout, Sparkles, Loader2 } from 'lucide-react';
+import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import { aiService, AI_ENABLED } from '../../services/ai';
+import {
+  cumulativeGermination, daysAfterSowing, germinationEnergy, germinationPercent, germinationSpeedIndex, meanGerminationTime,
+} from '../../utils/calculations';
+import { Page, PageHeader, Section } from '../../components/ui/Page';
+import { ChartFrame, EmptyState, Notice, Stat, StatGrid } from '../../components/ui/Display';
+import { FieldShell, TextField } from '../../components/ui/Field';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import RecordList from '../../components/ui/RecordList';
+import FormError from '../../components/data/FormError';
+import BatchSelect from '../../components/data/BatchSelect';
+import GerminationChart from '../../components/nursery/GerminationChart';
+import { req, today, useRecordForm } from '../../components/ui/useRecordForm';
+
+const f = (v: number | null, d = 1) => (v == null ? '—' : v.toFixed(d));
 
 const GerminationTrackerPage = () => {
-  const navigate = useNavigate();
-  const [logs, setLogs] = useState<GerminationLog[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [totalSeeds, setTotalSeeds] = useState<number>(() => {
-    const saved = localStorage.getItem('ac_germ_total_seeds');
-    return saved ? parseInt(saved) : 100;
-  });
-  const [form, setForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    count: '',
-    batchId: 'BATCH-001',
-  });
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const { repo } = useData();
+  const { batches } = useBatchIndex();
+  const { items: allCounts } = useCollection('germinationCounts');
+  const [chosenBatchId, setChosenBatchId] = useState<string | null>(null);
+  const [seedsInput, setSeedsInput] = useState('');
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightBusy, setInsightBusy] = useState(false);
 
-  const generateInsight = async () => {
-    if (logs.length === 0) return;
-    setIsAiLoading(true);
-    const summary = `Germination tracking for ${totalSeeds} seeds. Current GP: ${germinationPercentage}%, GRI: ${gri}, MGT: ${mgt} days. Daily logs: ` + logs.map(l => `${l.date}: +${l.count}`).join(', ');
-    const insight = await aiService.analyzeDataInsights(summary);
-    setAiInsight(insight);
-    setIsAiLoading(false);
+  // Default to the batch with the most recent count, else the first batch.
+  const batchId = chosenBatchId ?? [...allCounts].sort(byDateDesc)[0]?.batchId ?? batches[0]?.id ?? null;
+  const batch = batchId ? batches.find(b => b.id === batchId) : undefined;
+  const counts = allCounts.filter(c => c.batchId === batchId).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  const n0 = batch?.seedsSown ?? 0;
+  const sowing = batch?.sowingDate ?? null;
+  const total = counts.reduce((s, c) => s + c.count, 0);
+
+  const gp = germinationPercent(counts, n0);
+  const ge = sowing ? germinationEnergy(counts, n0, sowing, 7) : null;
+  const gsi = sowing && counts.length ? germinationSpeedIndex(counts, sowing) : null;
+  const mgt = sowing ? meanGerminationTime(counts, sowing) : null;
+  const cum = cumulativeGermination(counts, n0);
+
+  const form = useRecordForm(() => ({ date: today(), count: '' }));
+  const save = () =>
+    form.submit(async () => {
+      if (!batchId) throw new Error('Select a batch first.');
+      if (sowing && daysAfterSowing(form.values.date, sowing) < 0) throw new Error('The count date is before the batch was sown.');
+      await repo.add('germinationCounts', { batchId, date: form.values.date, count: req(form.values.count) });
+    }, { keep: ['date'] });
+
+  const saveSeedsSown = async () => {
+    if (!batch) return;
+    try {
+      await repo.update('batches', batch.id, { seedsSown: Number(seedsInput) });
+      setSeedsInput('');
+      setBatchError(null);
+    } catch (e) { setBatchError(saveErrorMessage(e)); }
   };
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ac_germination_logs');
-    if (saved) setLogs(JSON.parse(saved));
-  }, []);
-
-  const saveLog = () => {
-    if (!form.count) return;
-    const newLog: GerminationLog = {
-      id: `GL-${Date.now()}`,
-      batchId: form.batchId,
-      date: form.date,
-      count: parseInt(form.count),
-    };
-    const updated = [...logs, newLog].sort((a, b) => a.date.localeCompare(b.date));
-    setLogs(updated);
-    localStorage.setItem('ac_germination_logs', JSON.stringify(updated));
-    setShowForm(false);
-    setForm({ ...form, count: '' });
+  const explain = async () => {
+    setInsightBusy(true);
+    try {
+      setInsight(await aiService.analyzeDataInsights(
+        `Batch ${batch?.batchNumber}: ${n0} seeds sown on ${sowing}. Final germination ${f(gp)} %, germination energy (day 7) ${f(ge)} %, speed index ${f(gsi, 2)} seeds/day, mean germination time ${f(mgt)} days. Daily counts: ${counts.map(c => `${c.date} +${c.count}`).join(', ')}.`,
+      ));
+    } catch (e) { setInsight(`Could not get an interpretation: ${(e as Error).message}`); }
+    finally { setInsightBusy(false); }
   };
-
-  const updateTotalSeeds = (val: number) => {
-    setTotalSeeds(val);
-    localStorage.setItem('ac_germ_total_seeds', val.toString());
-  };
-
-  // Scientific Germination Metrics
-  const cumulativeCount = logs.reduce((sum, l) => sum + l.count, 0);
-  const germinationPercentage = totalSeeds > 0 ? ((cumulativeCount / totalSeeds) * 100).toFixed(1) : '0.0';
-
-  // GRI = Germination Rate Index = Σ(Gi/Ti) where Gi = seeds on day i, Ti = day number
-  const sowingDate = logs.length > 0 ? logs[0].date : null;
-  const gri = logs.reduce((sum, l) => {
-    if (!sowingDate) return 0;
-    const dayNum = Math.max(1, Math.ceil((new Date(l.date).getTime() - new Date(sowingDate).getTime()) / 86400000));
-    return sum + l.count / dayNum;
-  }, 0).toFixed(2);
-
-  // MGT = Mean Germination Time = Σ(Ti * Gi) / Σ(Gi)
-  const mgt = cumulativeCount > 0 ? (logs.reduce((sum, l) => {
-    if (!sowingDate) return 0;
-    const dayNum = Math.max(1, Math.ceil((new Date(l.date).getTime() - new Date(sowingDate).getTime()) / 86400000));
-    return sum + dayNum * l.count;
-  }, 0) / cumulativeCount).toFixed(1) : '—';
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Germination Tracker</h1>
-          
-        </div>
-        <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-2.5 rounded-xl shadow-lg shadow-teal-500/30 hover:scale-105 transition-transform">
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+    <Page>
+      <PageHeader title="Germination tracker" subtitle="Daily emergence counts per batch, with standard germination indices." back="/tools"
+        actions={<Button icon={<Plus className="w-4 h-4" />} onClick={form.openForm} disabled={!batch}>Count</Button>} />
 
-      {/* Seed Count Configuration */}
-      <div className="bento-card p-4 bg-white/90 border border-gray-200">
-        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Total Seeds Sown (N₀)</label>
-        <input type="number" value={totalSeeds} onChange={e => updateTotalSeeds(parseInt(e.target.value) || 0)} className="w-full mt-1 p-2.5 rounded-lg border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none" />
-      </div>
-
-      {/* Precision Metrics Dashboard */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bento-card p-4 border-l-4 border-l-teal-500 bg-white/90">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">GP (%)</span>
-          <div className="font-mono-sci text-2xl font-bold text-teal-700 mt-1">{germinationPercentage}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Σn/N₀ × 100</div>
-        </div>
-        <div className="bento-card p-4 border-l-4 border-l-emerald-500 bg-white/90">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">GRI</span>
-          <div className="font-mono-sci text-2xl font-bold text-emerald-700 mt-1">{gri}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Σ(Gᵢ/Tᵢ)</div>
-        </div>
-        <div className="bento-card p-4 border-l-4 border-l-green-500 bg-white/90">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">MGT (d)</span>
-          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{mgt}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Σ(Tᵢ·Gᵢ)/ΣGᵢ</div>
-        </div>
-      </div>
-
-      {/* AI Data Insights */}
-      {logs.length > 0 && (
-        <div className="bento-card p-4 bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-black text-teal-800 text-[10px] uppercase tracking-[0.15em] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-teal-500" /> AI Growth Insights
-            </h3>
-            <button onClick={generateInsight} disabled={isAiLoading} className="text-[10px] font-bold bg-teal-600 text-white px-3 py-1.5 rounded flex items-center gap-1 hover:bg-teal-700 disabled:opacity-50">
-              {isAiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
-              {isAiLoading ? 'Analyzing...' : 'Generate Report'}
-            </button>
-          </div>
-          {aiInsight && (
-            <div className="bg-white/60 p-3 rounded-lg border border-teal-100 text-sm text-teal-900 leading-relaxed font-medium shadow-sm">
-              {aiInsight}
-            </div>
-          )}
-          {!aiInsight && !isAiLoading && (
-            <div className="text-xs text-teal-600/70 italic">Click generate for a personalized AI analysis of your current germination curve.</div>
-          )}
-        </div>
-      )}
-
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="font-black text-lg text-gray-900">New Germination Count</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Observation Date</label>
-                <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Batch ID</label>
-                <input type="text" value={form.batchId} onChange={e => setForm({...form, batchId: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">New Emerged Seedlings (Gᵢ)</label>
-                <input type="number" placeholder="0" value={form.count} onChange={e => setForm({...form, count: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-2xl font-bold text-center focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none" />
-              </div>
-              <button onClick={saveLog} className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-teal-500/20 hover:shadow-xl transition-all">
-                Record Count
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Daily Germination Log */}
-      {logs.length === 0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
-          <Sprout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="font-bold text-sm text-gray-500">No germination data recorded.</p>
-          
-        </div>
+      {batches.length === 0 ? (
+        <EmptyState icon={Sprout} title="No batches yet" text="Germination counts belong to a sowing batch." action={<Link to="/nursery/new" className="text-sm font-medium text-green-700">Create a batch</Link>} />
       ) : (
-        <div className="bento-card p-4 bg-white/90 border border-gray-200">
-          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5" /> Daily Emergence Log
-          </h3>
-          <div className="space-y-2">
-            {logs.map((log, idx) => {
-              const cumulative = logs.slice(0, idx + 1).reduce((s, l) => s + l.count, 0);
-              const pct = totalSeeds > 0 ? ((cumulative / totalSeeds) * 100).toFixed(1) : '0.0';
-              return (
-                <div key={log.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                  <span className="font-mono-sci text-[10px] text-gray-400 w-20">{log.date}</span>
-                  <span className="font-mono-sci text-xs font-bold text-teal-700 w-12 text-center">+{log.count}</span>
-                  <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-teal-400 to-emerald-500 h-full rounded-full transition-all" style={{ width: `${Math.min(100, parseFloat(pct))}%` }}></div>
-                  </div>
-                  <span className="font-mono-sci text-[10px] font-bold text-gray-600 w-14 text-right">{pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Section>
+          <FieldShell id="germ-batch" label="Batch">
+            <BatchSelect id="germ-batch" value={batchId} onChange={id => { setChosenBatchId(id); setInsight(null); }} />
+          </FieldShell>
+          {batch && (
+            <dl className="grid grid-cols-2 gap-3 mt-3 text-sm">
+              <div><dt className="sci-label">Seeds sown (N)</dt><dd className="font-mono-sci text-gray-900 mt-0.5">{batch.seedsSown ?? '—'}</dd></div>
+              <div><dt className="sci-label">Sowing date</dt><dd className="font-mono-sci text-gray-900 mt-0.5">{batch.sowingDate ?? '—'}</dd></div>
+            </dl>
+          )}
+          {batch && batch.seedsSown == null && (
+            <div className="flex gap-2 items-end mt-3">
+              <TextField className="flex-1" id="germ-seeds" type="number" step="1" min={1} label="Enter seeds sown for this batch" value={seedsInput} onChange={setSeedsInput} />
+              <Button onClick={saveSeedsSown} disabled={!seedsInput}>Save</Button>
+            </div>
+          )}
+          {batch && !batch.sowingDate && (
+            <div className="mt-3"><Notice>No sowing date on this batch, so timing indices can't be calculated. <Link className="font-medium underline" to={`/nursery/batch/${batch.id}/edit`}>Add it</Link>.</Notice></div>
+          )}
+          {batchError && <div className="mt-3"><FormError message={batchError} /></div>}
+        </Section>
       )}
-    </div>
+
+      {batch && (
+        <StatGrid cols={4}>
+          <Stat label="Germination" value={f(gp)} unit="%" formula="Σn / N × 100" tone="leaf" note={`${total} seeds`} />
+          <Stat label="Energy (day 7)" value={f(ge)} unit="%" formula="% by day 7 after sowing" />
+          <Stat label="Speed index" value={f(gsi, 2)} unit="seeds d⁻¹" formula="Σ(nᵢ / tᵢ)" />
+          <Stat label="Mean time" value={f(mgt)} unit="days" formula="Σ(tᵢ·nᵢ) / Σnᵢ" />
+        </StatGrid>
+      )}
+
+      {batch && counts.length > 0 && (
+        <ChartFrame title="Emergence" caption={sowing ? 'Bars: new germinants per count. Line: cumulative germination % of seeds sown. Labels: days after sowing.' : 'Labels are dates because the batch has no sowing date.'}>
+          <GerminationChart
+            labels={counts.map(c => (sowing ? `D${daysAfterSowing(c.date, sowing)}` : c.date.slice(5)))}
+            dailyCount={counts.map(c => c.count)}
+            cumulativePercent={cum.map(x => +x.toFixed(1))}
+          />
+        </ChartFrame>
+      )}
+
+      {batch && counts.length > 0 && AI_ENABLED && (
+        <Section title="Interpretation" actions={<Button size="sm" variant="secondary" onClick={explain} disabled={insightBusy} icon={insightBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}>Explain</Button>}>
+          <p className="text-sm text-gray-700">{insight ?? 'Get a short AI interpretation of this batch’s germination curve.'}</p>
+        </Section>
+      )}
+
+      {batch && (counts.length === 0 ? (
+        <EmptyState icon={Sprout} title="No counts for this batch" text="Count newly emerged seedlings at regular intervals (e.g. every 2–3 days) and record each count." action={<Button onClick={form.openForm}>Record first count</Button>} />
+      ) : (
+        <RecordList
+          label="Germination counts"
+          onDelete={id => repo.remove('germinationCounts', id)}
+          rows={[...counts].reverse().map((c, i, arr) => ({
+            id: c.id,
+            title: c.date,
+            meta: sowing ? `day ${daysAfterSowing(c.date, sowing)} after sowing` : undefined,
+            values: [
+              { label: 'New germinants', value: `+${c.count}` },
+              { label: 'Cumulative', value: n0 ? cum[arr.length - 1 - i].toFixed(1) : '—', unit: '%' },
+            ],
+          }))}
+        />
+      ))}
+
+      <Sheet open={form.open} title={`New count · ${batch?.batchNumber ?? ''}`} onClose={form.close}>
+        <TextField id="gc-date" type="date" label="Count date" value={form.values.date} onChange={form.set('date')} />
+        <TextField id="gc-count" type="number" step="1" min={0} label="Newly germinated seeds since last count" value={form.values.count} onChange={form.set('count')} placeholder="0" />
+        <FormError message={form.error} />
+        <Button block onClick={save} disabled={form.saving}>Save count</Button>
+      </Sheet>
+    </Page>
   );
 };
 
