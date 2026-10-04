@@ -7,7 +7,7 @@ import { BATCH_STATUSES, type Batch } from '../../data/schema';
 import FormError from '../../components/data/FormError';
 import SeedLotSelect from '../../components/data/SeedLotSelect';
 
-const inputCls = 'w-full mt-1.5 px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100';
+const inputCls = 'w-full mt-1.5 px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 outline-hidden focus:border-green-600 focus:ring-2 focus:ring-green-100';
 const labelCls = 'sci-label';
 
 type FormState = {

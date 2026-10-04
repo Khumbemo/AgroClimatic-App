@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 
 export const controlCls =
-  'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg-white text-sm text-gray-900 outline-none transition-colors focus:border-green-600 focus:ring-2 focus:ring-green-100 placeholder:text-gray-400';
+  'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg-white text-sm text-gray-900 outline-hidden transition-colors focus:border-green-600 focus:ring-2 focus:ring-green-100 placeholder:text-gray-400';
 
 type Base = { id: string; label: string; unit?: string; hint?: string; className?: string };
 

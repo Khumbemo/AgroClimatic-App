@@ -118,7 +118,7 @@ const AgroBotPage = () => {
       </header>
 
       {/* Main Chat Area */}
-      <div className="flex-1 glass-panel rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative bg-white/40">
+      <div className="flex-1 glass-panel rounded-xl border border-gray-100 shadow-xs overflow-hidden flex flex-col relative bg-white/40">
         
         {/* Messages Container */}
         <div
@@ -168,7 +168,7 @@ const AgroBotPage = () => {
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[85%] p-4 rounded-lg text-sm leading-relaxed shadow-sm ${
+                  <div className={`max-w-[85%] p-4 rounded-lg text-sm leading-relaxed shadow-xs ${
                     m.role === 'user'
                       ? 'bg-green-600 text-white rounded-br-none'
                       : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
@@ -207,7 +207,7 @@ const AgroBotPage = () => {
               setIsNearBottom(true);
               scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
             }}
-            className="absolute bottom-24 right-6 p-2 bg-green-600 text-white rounded-full shadow-sm z-20"
+            className="absolute bottom-24 right-6 p-2 bg-green-600 text-white rounded-full shadow-xs z-20"
           >
             <ArrowDown className="w-4 h-4" />
           </motion.button>
@@ -215,14 +215,14 @@ const AgroBotPage = () => {
 
         {/* Input Area */}
         <div className="p-4 bg-white/60 border-t border-gray-100">
-          <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm focus-within:border-green-500 transition-all">
+          <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-xs focus-within:border-green-500 transition-all">
             <input 
               type="text" 
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="Ask species, batch data, VPD..."
-              className="flex-1 bg-transparent border-none text-sm font-medium outline-none px-3 placeholder-gray-400"
+              className="flex-1 bg-transparent border-none text-sm font-medium outline-hidden px-3 placeholder-gray-400"
               disabled={isLoading}
             />
             <motion.button
@@ -233,7 +233,7 @@ const AgroBotPage = () => {
               className={`p-3 rounded-xl transition-all ${
                 isLoading || !input.trim()
                   ? 'bg-gray-100 text-gray-300'
-                  : 'bg-green-600 text-white shadow-sm '
+                  : 'bg-green-600 text-white shadow-xs '
               }`}
             >
               <Send className="w-4 h-4" />

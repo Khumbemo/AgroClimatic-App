@@ -1,8 +1,133 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap')
+layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-white: rgb(var(--white));
+
+  --color-gray-50: rgb(var(--gray-50));
+  --color-gray-100: rgb(var(--gray-100));
+  --color-gray-200: rgb(var(--gray-200));
+  --color-gray-300: rgb(var(--gray-300));
+  --color-gray-400: rgb(var(--gray-400));
+  --color-gray-500: rgb(var(--gray-500));
+  --color-gray-600: rgb(var(--gray-600));
+  --color-gray-700: rgb(var(--gray-700));
+  --color-gray-800: rgb(var(--gray-800));
+  --color-gray-900: rgb(var(--gray-900));
+  --color-gray-950: rgb(var(--gray-950));
+
+  --color-green-50: rgb(var(--green-50));
+  --color-green-100: rgb(var(--green-100));
+  --color-green-200: rgb(var(--green-200));
+  --color-green-300: rgb(var(--green-300));
+  --color-green-400: rgb(var(--green-400));
+  --color-green-500: rgb(var(--green-500));
+  --color-green-600: rgb(var(--green-600));
+  --color-green-700: rgb(var(--green-700));
+  --color-green-800: rgb(var(--green-800));
+  --color-green-900: rgb(var(--green-900));
+  --color-green-950: rgb(var(--green-950));
+
+  --color-blue-50: rgb(var(--blue-50));
+  --color-blue-100: rgb(var(--blue-100));
+  --color-blue-200: rgb(var(--blue-200));
+  --color-blue-300: rgb(var(--blue-300));
+  --color-blue-400: rgb(var(--blue-400));
+  --color-blue-500: rgb(var(--blue-500));
+  --color-blue-600: rgb(var(--blue-600));
+  --color-blue-700: rgb(var(--blue-700));
+  --color-blue-800: rgb(var(--blue-800));
+  --color-blue-900: rgb(var(--blue-900));
+  --color-blue-950: rgb(var(--blue-950));
+
+  --color-amber-50: rgb(var(--amber-50));
+  --color-amber-100: rgb(var(--amber-100));
+  --color-amber-200: rgb(var(--amber-200));
+  --color-amber-300: rgb(var(--amber-300));
+  --color-amber-400: rgb(var(--amber-400));
+  --color-amber-500: rgb(var(--amber-500));
+  --color-amber-600: rgb(var(--amber-600));
+  --color-amber-700: rgb(var(--amber-700));
+  --color-amber-800: rgb(var(--amber-800));
+  --color-amber-900: rgb(var(--amber-900));
+  --color-amber-950: rgb(var(--amber-950));
+
+  --color-red-50: rgb(var(--red-50));
+  --color-red-100: rgb(var(--red-100));
+  --color-red-200: rgb(var(--red-200));
+  --color-red-300: rgb(var(--red-300));
+  --color-red-400: rgb(var(--red-400));
+  --color-red-500: rgb(var(--red-500));
+  --color-red-600: rgb(var(--red-600));
+  --color-red-700: rgb(var(--red-700));
+  --color-red-800: rgb(var(--red-800));
+  --color-red-900: rgb(var(--red-900));
+  --color-red-950: rgb(var(--red-950));
+
+  --font-sans:
+    'IBM Plex Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility font-mono-sci {
+  /* Kept as an alias so existing markup picks up the new data face */
+  @apply font-mono;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility glass-panel {
+  background: rgb(var(--white));
+  border: 1px solid rgb(var(--gray-200));
+}
+
+@utility glass-pill {
+  background: rgb(var(--white));
+  border-top: 1px solid rgb(var(--gray-200));
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility bento-card {
+  /* Instrument panel: flat white, hairline border, no glow */
+  @apply rounded-lg border border-gray-200 bg-white p-5 transition-colors duration-200 hover:border-green-300;
+}
+
+@utility sci-label {
+  /* Small uppercase caption above a reading or section */
+  @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500;
+}
+
+@utility sci-section-title {
+  @apply text-xs font-semibold uppercase tracking-[0.12em] text-gray-600;
+}
 
 /*
   Greenhouse lab: daylight through glazing onto a bench of instruments.
@@ -10,7 +135,7 @@
   like graph paper; data is always set in mono with its unit.
 */
 @layer base {
-  /* Palette channels (R G B) consumed by tailwind.config.js. Dark mode swaps the values,
+  /* Palette channels (R G B) consumed by the @theme colours above. Dark mode swaps the values,
      so every existing utility class themes itself without per-page dark: variants. */
   :root {
     --white: 255 255 255;
@@ -151,47 +276,13 @@
 
   input, select, textarea { @apply font-sans; }
 
+  /* Tailwind v4 no longer sets a pointer cursor on buttons */
+  button:not(:disabled), [role='button']:not(:disabled), [role='tab'], [role='radio'] { cursor: pointer; }
+
   :focus-visible { outline: 2px solid rgb(var(--green-700)); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-  }
-}
-
-@layer utilities {
-  /* Kept as an alias so existing markup picks up the new data face */
-  .font-mono-sci {
-    @apply font-mono;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .glass-panel {
-    background: rgb(var(--white));
-    border: 1px solid rgb(var(--gray-200));
-  }
-
-  .glass-pill {
-    background: rgb(var(--white));
-    border-top: 1px solid rgb(var(--gray-200));
-  }
-
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-}
-
-@layer components {
-  /* Instrument panel: flat white, hairline border, no glow */
-  .bento-card {
-    @apply rounded-lg border border-gray-200 bg-white p-5 transition-colors duration-200 hover:border-green-300;
-  }
-
-  /* Small uppercase caption above a reading or section */
-  .sci-label {
-    @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500;
-  }
-
-  .sci-section-title {
-    @apply text-xs font-semibold uppercase tracking-[0.12em] text-gray-600;
   }
 }
 

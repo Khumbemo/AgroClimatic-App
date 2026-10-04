@@ -104,7 +104,7 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   return (
     <div className="min-h-screen flex flex-col selection:bg-green-200">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:bg-white focus:px-3 focus:py-2 focus:rounded-md focus:border focus:border-green-700">Skip to content</a>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-80 focus:bg-white focus:px-3 focus:py-2 focus:rounded-md focus:border focus:border-green-700">Skip to content</a>
       <TopHeader />
       <SideNav />
       <main id="main" className="flex-1 w-full px-4 pt-5 pb-24 lg:pb-10 lg:pl-60">

@@ -14,7 +14,7 @@ const chipTone: Record<Tone, string> = {
 };
 
 export const Chip = ({ tone = 'neutral', children, className }: { tone?: Tone; children: ReactNode; className?: string }) => (
-  <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded border text-[11px] font-medium whitespace-nowrap', chipTone[tone], className)}>{children}</span>
+  <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-sm border text-[11px] font-medium whitespace-nowrap', chipTone[tone], className)}>{children}</span>
 );
 
 const statTone: Record<Tone, string> = {

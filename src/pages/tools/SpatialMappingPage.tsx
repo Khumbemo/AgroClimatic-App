@@ -108,7 +108,7 @@ const SpatialMappingPage = () => {
                             <button
                               onClick={() => openCell(r, c)}
                               aria-label={`Bench ${r + 1}, position ${c + 1}: ${p ? `${batchText(p)}, ${statusLabel[status]}` : 'empty'}`}
-                              className={`w-[4.5rem] h-14 rounded border text-left px-1.5 py-1 transition-colors hover:border-green-700 ${statusStyle[status]}`}
+                              className={`w-18 h-14 rounded-sm border text-left px-1.5 py-1 transition-colors hover:border-green-700 ${statusStyle[status]}`}
                             >
                               {p ? (
                                 <>
@@ -128,7 +128,7 @@ const SpatialMappingPage = () => {
             </div>
             <ul className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100">
               {(Object.keys(statusLabel) as CellStatus[]).map(k => (
-                <li key={k} className="flex items-center gap-1.5 text-[11px] text-gray-600"><span className={`w-3 h-3 rounded border ${statusStyle[k]}`} />{statusLabel[k]}</li>
+                <li key={k} className="flex items-center gap-1.5 text-[11px] text-gray-600"><span className={`w-3 h-3 rounded-sm border ${statusStyle[k]}`} />{statusLabel[k]}</li>
               ))}
             </ul>
             <div className="mt-3 flex justify-end">

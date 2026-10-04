@@ -76,7 +76,7 @@ const EnvironmentalLogsPage = () => {
             return {
               id: r.id,
               title: r.date,
-              badges: <>{<span className={`text-[11px] px-1.5 py-0.5 rounded border ${vpdToneChip[band.tone]}`}>{band.label}</span>}{r.isExample && <Chip>Example</Chip>}</>,
+              badges: <>{<span className={`text-[11px] px-1.5 py-0.5 rounded-sm border ${vpdToneChip[band.tone]}`}>{band.label}</span>}{r.isExample && <Chip>Example</Chip>}</>,
               values: [
                 { label: 'Temp', value: `${r.tempMin}–${r.tempMax}`, unit: '°C' },
                 { label: 'RH', value: r.humidity, unit: '%' },

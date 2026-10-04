@@ -84,7 +84,7 @@ const HomePage = () => {
             <div className="p-4 border-t border-gray-200 space-y-3">
               <div className="flex justify-between items-center gap-3">
                 <span className="sci-label">Vapour pressure deficit</span>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${vpdToneChip[band.tone]}`}>{band.label}</span>
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-sm border ${vpdToneChip[band.tone]}`}>{band.label}</span>
               </div>
               <VpdScale value={vpd} />
               <p className="text-[11px] text-gray-500">Tetens equation at the daily mean temperature ({reading.tempMean} °C) and {reading.humidity} % RH.</p>

@@ -41,7 +41,7 @@ const MigrationNotice = () => {
         )}
         {migration.notes.map(n => <p key={n} className="text-amber-900">{n}</p>)}
       </div>
-      <button onClick={dismiss} aria-label="Dismiss" className="p-1 h-fit rounded hover:bg-green-100 text-green-800"><X className="w-4 h-4" /></button>
+      <button onClick={dismiss} aria-label="Dismiss" className="p-1 h-fit rounded-sm hover:bg-green-100 text-green-800"><X className="w-4 h-4" /></button>
     </section>
   );
 };

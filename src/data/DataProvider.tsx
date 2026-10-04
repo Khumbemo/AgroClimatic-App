@@ -71,7 +71,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider value={value}>
       {children}
       {writeError && (
-        <div role="alert" className="fixed left-4 right-4 bottom-20 z-[70] max-w-md mx-auto bg-red-50 border border-red-200 text-red-800 text-sm rounded-md p-3 flex gap-3 items-start">
+        <div role="alert" className="fixed left-4 right-4 bottom-20 z-70 max-w-md mx-auto bg-red-50 border border-red-200 text-red-800 text-sm rounded-md p-3 flex gap-3 items-start">
           <span className="flex-1">{writeError}</span>
           <button onClick={() => setWriteError(null)} className="text-red-700 font-medium">Dismiss</button>
         </div>

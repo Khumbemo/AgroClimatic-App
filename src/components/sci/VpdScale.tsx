@@ -11,7 +11,7 @@ const VpdScale = ({ value }: { value: number }) => {
   return (
     <div role="img" aria-label={`VPD ${value.toFixed(2)} kPa: ${band.label}`}>
       <div className="relative">
-        <div className="h-2.5 rounded-sm overflow-hidden flex">
+        <div className="h-2.5 rounded-xs overflow-hidden flex">
           {VPD_BANDS.map((b, i) => {
             const from = i === 0 ? 0 : Math.min(VPD_BANDS[i - 1].max, SCALE_MAX);
             const to = Math.min(b.max, SCALE_MAX);

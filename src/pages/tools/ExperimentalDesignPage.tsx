@@ -36,7 +36,7 @@ const LevelEditor = ({ id, label, levels, onChange }: { id: string; label: strin
       {levels.length > 0 && (
         <ul className="flex flex-wrap gap-1.5 mt-2">
           {levels.map((t, i) => (
-            <li key={`${t}-${i}`} className="flex items-center gap-1 text-xs bg-green-50 text-green-900 border border-green-200 rounded px-2 py-1">
+            <li key={`${t}-${i}`} className="flex items-center gap-1 text-xs bg-green-50 text-green-900 border border-green-200 rounded-sm px-2 py-1">
               <span className="font-mono-sci text-green-700">T{i + 1}</span> {t}
               <button onClick={() => onChange(levels.filter((_, j) => j !== i))} aria-label={`Remove ${t}`} className="ml-0.5 text-green-700 hover:text-red-600"><X className="w-3 h-3" /></button>
             </li>
@@ -62,7 +62,7 @@ const FieldMap = ({ exp, reveal }: { exp: Experiment; reveal: boolean }) => {
             <tr key={r}>
               <th scope="row" className="pr-1 text-left font-mono-sci text-gray-500 font-normal whitespace-nowrap">{isLatin ? `Row ${r}` : exp.designType === 'CRD' ? 'Plots' : `Block ${r}`}</th>
               {rowsOf(r).map(a => (
-                <td key={`${a.block}-${a.position}-${a.row}-${a.col}`} className="min-w-[4.5rem] max-w-[8rem] align-top bg-green-50 border border-green-200 rounded px-1.5 py-1 text-green-950">
+                <td key={`${a.block}-${a.position}-${a.row}-${a.col}`} className="min-w-18 max-w-32 align-top bg-green-50 border border-green-200 rounded-sm px-1.5 py-1 text-green-950">
                   <span className="block font-mono-sci text-[10px] text-green-700">#{a.plot ?? a.position}</span>
                   <span className="block truncate" title={show(a)}>{show(a)}</span>
                 </td>
@@ -114,9 +114,9 @@ const ExperimentCard = ({ exp }: { exp: Experiment }) => {
       </div>
 
       <dl className="grid grid-cols-3 gap-2 mt-3 text-center">
-        <div className="bg-gray-50 rounded p-2"><dt className="sci-label">Treatments</dt><dd className="font-mono-sci text-gray-900">{exp.treatments.length}{exp.subTreatments?.length ? ` × ${exp.subTreatments.length}` : ''}</dd></div>
-        <div className="bg-gray-50 rounded p-2"><dt className="sci-label">{exp.designType === 'Latin_Square' ? 'Rows × cols' : exp.designType === 'CRD' ? 'Replicates' : 'Blocks'}</dt><dd className="font-mono-sci text-gray-900">{exp.designType === 'Latin_Square' ? `${exp.treatments.length} × ${exp.treatments.length}` : exp.replicates}</dd></div>
-        <div className="bg-gray-50 rounded p-2"><dt className="sci-label">Plots</dt><dd className="font-mono-sci text-gray-900">{plots}</dd></div>
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">Treatments</dt><dd className="font-mono-sci text-gray-900">{exp.treatments.length}{exp.subTreatments?.length ? ` × ${exp.subTreatments.length}` : ''}</dd></div>
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">{exp.designType === 'Latin_Square' ? 'Rows × cols' : exp.designType === 'CRD' ? 'Replicates' : 'Blocks'}</dt><dd className="font-mono-sci text-gray-900">{exp.designType === 'Latin_Square' ? `${exp.treatments.length} × ${exp.treatments.length}` : exp.replicates}</dd></div>
+        <div className="bg-gray-50 rounded-sm p-2"><dt className="sci-label">Plots</dt><dd className="font-mono-sci text-gray-900">{plots}</dd></div>
       </dl>
 
       {legacy && (

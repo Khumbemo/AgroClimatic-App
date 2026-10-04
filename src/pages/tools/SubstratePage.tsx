@@ -92,11 +92,11 @@ const SubstratePage = () => {
           id: m.id, title: m.name, meta: m.cec != null ? `CEC ${m.cec} cmol(+) kg⁻¹` : undefined,
           note: (
             <>
-              <span className="flex h-3 rounded-sm overflow-hidden mb-2" aria-hidden="true">
+              <span className="flex h-3 rounded-xs overflow-hidden mb-2" aria-hidden="true">
                 {m.components.map((c, i) => <span key={c.name} className={MIX_COLOURS[i % MIX_COLOURS.length]} style={{ width: `${c.pct}%` }} />)}
               </span>
               <span className="flex flex-wrap gap-x-3 gap-y-1">
-                {m.components.map((c, i) => <span key={c.name} className="flex items-center gap-1"><span className={`w-2 h-2 rounded-sm ${MIX_COLOURS[i % MIX_COLOURS.length]}`} />{c.name} <span className="font-mono-sci">{c.pct} %</span></span>)}
+                {m.components.map((c, i) => <span key={c.name} className="flex items-center gap-1"><span className={`w-2 h-2 rounded-xs ${MIX_COLOURS[i % MIX_COLOURS.length]}`} />{c.name} <span className="font-mono-sci">{c.pct} %</span></span>)}
               </span>
             </>
           ),

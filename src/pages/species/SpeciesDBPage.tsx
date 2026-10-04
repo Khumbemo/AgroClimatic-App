@@ -34,7 +34,7 @@ const SpeciesDBPage: React.FC = () => {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search by binomial, common name or family"
-          className="w-full bg-white border border-gray-300 rounded-md py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 placeholder:text-gray-400"
+          className="w-full bg-white border border-gray-300 rounded-md py-2.5 pl-9 pr-3 text-sm focus:outline-hidden focus:border-green-600 focus:ring-2 focus:ring-green-100 placeholder:text-gray-400"
         />
       </div>
 
@@ -48,7 +48,7 @@ const SpeciesDBPage: React.FC = () => {
               <h3 className="text-[15px] font-medium text-gray-900 italic">{sp.botanicalName}</h3>
               <p className="text-xs text-gray-500">{sp.commonName || '—'} · {sp.family || '—'}</p>
             </div>
-            <span title={sp.notes} className={`text-[11px] font-medium px-2 py-0.5 rounded border shrink-0 capitalize ${storageChip[sp.storageBehaviour]}`}>{sp.storageBehaviour}</span>
+            <span title={sp.notes} className={`text-[11px] font-medium px-2 py-0.5 rounded-sm border shrink-0 capitalize ${storageChip[sp.storageBehaviour]}`}>{sp.storageBehaviour}</span>
             <ChevronRight className="w-4 h-4 text-gray-300" />
           </div>
         ))}

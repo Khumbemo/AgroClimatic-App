@@ -5,7 +5,7 @@ import { useCollection, useData } from '../../data/hooks';
 import { saveErrorMessage } from '../../data/errors';
 import FormError from '../../components/data/FormError';
 
-const inputCls = 'w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 outline-none focus:border-green-600';
+const inputCls = 'w-full mt-1 px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 outline-hidden focus:border-green-600';
 const emptyForm = { lotNumber: '', speciesId: '', collectionDate: '', stockKg: '', moistureContentPct: '', thousandSeedWeightG: '', viabilityPct: '' };
 
 const SeedLotsPage: React.FC = () => {
@@ -45,7 +45,7 @@ const SeedLotsPage: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-60 flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-semibold text-lg text-gray-900">New seed lot</h2>
@@ -89,10 +89,10 @@ const SeedLotsPage: React.FC = () => {
               <div key={lot.id} className="bento-card p-4 space-y-3">
                 <div className="flex justify-between items-start gap-3">
                   <div className="min-w-0">
-                    <h3 className="font-medium text-gray-900 font-mono-sci">{lot.lotNumber} {lot.isExample && <span className="ml-1 px-1.5 py-0.5 rounded border text-[10px] font-sans bg-gray-100 text-gray-600 border-gray-200">Example</span>}</h3>
+                    <h3 className="font-medium text-gray-900 font-mono-sci">{lot.lotNumber} {lot.isExample && <span className="ml-1 px-1.5 py-0.5 rounded-sm border text-[10px] font-sans bg-gray-100 text-gray-600 border-gray-200">Example</span>}</h3>
                     <p className="text-xs text-gray-500 italic">{(lot.speciesId && speciesName.get(lot.speciesId)) || 'Species not set'}</p>
                   </div>
-                  <span className="font-mono-sci text-sm text-green-800 bg-green-50 border border-green-100 px-2 py-0.5 rounded">{lot.stockKg != null ? `${lot.stockKg} kg` : '— kg'}</span>
+                  <span className="font-mono-sci text-sm text-green-800 bg-green-50 border border-green-100 px-2 py-0.5 rounded-sm">{lot.stockKg != null ? `${lot.stockKg} kg` : '— kg'}</span>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-center">
                   <div><dt className="sci-label flex items-center justify-center gap-1"><MapPin className="w-3 h-3" />Origin</dt><dd className="font-mono-sci text-xs text-gray-800 mt-1">{origin ? `${origin.lat.toFixed(2)}, ${origin.lng.toFixed(2)}` : '—'}</dd></div>

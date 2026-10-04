@@ -79,7 +79,7 @@ const MortalityPage = () => {
             {byCause.map(([cause, n]) => (
               <li key={cause} className="grid grid-cols-[minmax(0,10rem)_1fr_3rem] items-center gap-3 text-xs">
                 <span className="truncate text-gray-700" title={cause}>{cause}</span>
-                <span className="h-2 bg-gray-100 rounded-sm overflow-hidden"><span className="block h-full bg-red-500" style={{ width: `${(n / dead) * 100}%` }} /></span>
+                <span className="h-2 bg-gray-100 rounded-xs overflow-hidden"><span className="block h-full bg-red-500" style={{ width: `${(n / dead) * 100}%` }} /></span>
                 <span className="font-mono-sci text-right text-gray-700">{((n / dead) * 100).toFixed(0)} %</span>
               </li>
             ))}

@@ -6,7 +6,7 @@ import { vpdToneChip } from '../../components/sci/vpdTone';
 
 type CalcType = 'VPD' | 'GRI' | 'PPM' | null;
 
-const inputCls = 'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg-white font-mono-sci text-base text-gray-900 focus:border-green-600 focus:ring-2 focus:ring-green-100 outline-none transition-colors';
+const inputCls = 'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg-white font-mono-sci text-base text-gray-900 focus:border-green-600 focus:ring-2 focus:ring-green-100 outline-hidden transition-colors';
 
 const Field = ({ id, label, unit, value, onChange, step, placeholder }: { id: string; label: string; unit: string; value: string; onChange: (v: string) => void; step: string; placeholder: string }) => (
   <div>
@@ -37,7 +37,7 @@ const Result = ({ label, value, unit, children }: { label: string; value: string
 );
 
 const Formula = ({ children }: { children: ReactNode }) => (
-  <p className="font-mono-sci text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2 break-words">{children}</p>
+  <p className="font-mono-sci text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2 wrap-break-word">{children}</p>
 );
 
 const CalcPage = () => {
@@ -104,7 +104,7 @@ const CalcPage = () => {
           <Result label="Calculated VPD" value={vpdValue !== null ? vpdValue.toFixed(2) : '–'} unit="kPa">
             {band && vpdValue !== null && (
               <div className="mt-3 space-y-3">
-                <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded border ${vpdToneChip[band.tone]}`}>{band.label}</span>
+                <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-sm border ${vpdToneChip[band.tone]}`}>{band.label}</span>
                 <VpdScale value={vpdValue} />
               </div>
             )}
@@ -136,8 +136,8 @@ const CalcPage = () => {
             </div>
             {griCounts.map((item, idx) => (
               <div key={idx} className="grid grid-cols-[5rem_1fr_2.5rem] items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-b-0">
-                <input aria-label={`Day for row ${idx + 1}`} type="number" value={item.day} onChange={e => { const n = [...griCounts]; n[idx].day = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
-                <input aria-label={`Germinants for row ${idx + 1}`} type="number" value={item.count} onChange={e => { const n = [...griCounts]; n[idx].count = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
+                <input aria-label={`Day for row ${idx + 1}`} type="number" value={item.day} onChange={e => { const n = [...griCounts]; n[idx].day = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded-sm border border-gray-200 font-mono-sci text-sm outline-hidden focus:border-green-500" />
+                <input aria-label={`Germinants for row ${idx + 1}`} type="number" value={item.count} onChange={e => { const n = [...griCounts]; n[idx].count = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded-sm border border-gray-200 font-mono-sci text-sm outline-hidden focus:border-green-500" />
                 <button aria-label={`Remove row ${idx + 1}`} onClick={() => setGriCounts(griCounts.filter((_, i) => i !== idx))} className="p-1.5 text-gray-500 hover:text-red-600 justify-self-end"><X className="w-4 h-4" /></button>
               </div>
             ))}

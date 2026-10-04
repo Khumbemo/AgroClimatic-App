@@ -54,9 +54,9 @@ const BatchListPage: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-medium text-gray-900 font-mono-sci">{batch.batchNumber}</h3>
-                  <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium ${statusChip[batch.status]}`}>{batch.status}</span>
-                  {batch.needsReview && <span className="px-1.5 py-0.5 rounded border text-[10px] font-medium bg-amber-50 text-amber-800 border-amber-200">Needs review</span>}
-                  {batch.isExample && <span className="px-1.5 py-0.5 rounded border text-[10px] font-medium bg-gray-100 text-gray-600 border-gray-200">Example</span>}
+                  <span className={`px-1.5 py-0.5 rounded-sm border text-[10px] font-medium ${statusChip[batch.status]}`}>{batch.status}</span>
+                  {batch.needsReview && <span className="px-1.5 py-0.5 rounded-sm border text-[10px] font-medium bg-amber-50 text-amber-800 border-amber-200">Needs review</span>}
+                  {batch.isExample && <span className="px-1.5 py-0.5 rounded-sm border text-[10px] font-medium bg-gray-100 text-gray-600 border-gray-200">Example</span>}
                 </div>
                 <p className="text-xs text-gray-500 italic truncate">{(batch.speciesId && speciesName.get(batch.speciesId)) || 'Species not set'}</p>
                 <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-500 font-mono-sci">

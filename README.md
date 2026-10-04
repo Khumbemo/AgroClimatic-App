@@ -36,7 +36,32 @@ Greenhouse ─< bench placements ─> Batch
   or to placeholder batches flagged "needs review". Original data is never deleted, and
   records with out-of-range values are kept aside rather than dropped.
 
+## Science
+
+Formulas live in `src/utils/calculations.ts` and trial layouts in `src/utils/trialDesign.ts`;
+both are unit-tested against hand-worked values (`npm test`).
+
+- Germination: final %, mean germination time Σ(tᵢnᵢ)/Σnᵢ, speed index Σ(nᵢ/tᵢ) (Maguire
+  1962), germination energy by day 7 after sowing (Ranal & Santana 2006 definitions).
+- Seedling quality: sturdiness H/D, shoot : root, Dickson quality index (Dickson et al. 1960),
+  relative growth rate.
+- Climate: VPD (Tetens), dew point (Magnus), daily light integral, growing degree days.
+- Fertigation: dose for a target ppm, leaching fraction.
+- Trials: seeded, reproducible CRD, RCBD, Latin square and split-plot randomisation.
+
+## Backup
+
+Settings → Data exports every collection as JSON and restores it (validated, upserted by id).
+
 ## Configuration
 
 Copy `.env.example` to `.env` and fill in the Firebase web-app keys. Leave them unset for
-demo mode.
+demo mode. Optional: `VITE_GEMINI_API_KEY` enables AgroBot's open questions (model
+`gemini-flash-latest`, override with `VITE_GEMINI_MODEL`). The key ships inside the app, so
+restrict it to your domains/app in Google Cloud.
+
+## Known issue
+
+`npm audit` reports the `tar` package used by Capacitor CLI 6 (only when running `cap`
+commands on a developer machine; not part of the app). Fixing it needs Capacitor 8 and an
+Android project migration, which should be done with an Android build to test against.
