@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { lazy, useEffect } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
@@ -6,34 +6,29 @@ import { DataProvider } from './data/DataProvider';
 import LoginPage from './pages/LoginPage';
 import { App as CapApp } from '@capacitor/app';
 
-// New main tabs
-import HomePage from './pages/home/HomePage';
-import ToolsPage from './pages/tools/ToolsPage';
-import CalcPage from './pages/calc/CalcPage';
-import ChatPage from './pages/chat/ChatPage';
-
-// Scientific tool pages
-import EnvironmentalLogsPage from './pages/tools/EnvironmentalLogsPage';
-import GerminationTrackerPage from './pages/tools/GerminationTrackerPage';
-import TreatmentLogsPage from './pages/tools/TreatmentLogsPage';
-import MorphometricsPage from './pages/tools/MorphometricsPage';
-import SpatialMappingPage from './pages/tools/SpatialMappingPage';
-
-// Advanced research pages
-import ExperimentalDesignPage from './pages/tools/ExperimentalDesignPage';
-import SubstratePage from './pages/tools/SubstratePage';
-import ProvenancePage from './pages/tools/ProvenancePage';
-import MortalityPage from './pages/tools/MortalityPage';
-import AuditPage from './pages/tools/AuditPage';
-
-// Existing tool pages
-import BatchListPage from './pages/nursery/BatchListPage';
-import BatchDetailPage from './pages/nursery/BatchDetailPage';
-import NewBatchPage from './pages/nursery/NewBatchPage';
-import RecordsPage from './pages/records/RecordsPage';
-import SeedLotsPage from './pages/records/SeedLotsPage';
-import SpeciesDBPage from './pages/species/SpeciesDBPage';
-import SettingsPage from './pages/settings/SettingsPage';
+// Pages load on demand so the first screen downloads only what it needs.
+const HomePage = lazy(() => import('./pages/home/HomePage'));
+const ToolsPage = lazy(() => import('./pages/tools/ToolsPage'));
+const CalcPage = lazy(() => import('./pages/calc/CalcPage'));
+const ChatPage = lazy(() => import('./pages/chat/ChatPage'));
+const EnvironmentalLogsPage = lazy(() => import('./pages/tools/EnvironmentalLogsPage'));
+const GerminationTrackerPage = lazy(() => import('./pages/tools/GerminationTrackerPage'));
+const TreatmentLogsPage = lazy(() => import('./pages/tools/TreatmentLogsPage'));
+const MorphometricsPage = lazy(() => import('./pages/tools/MorphometricsPage'));
+const SpatialMappingPage = lazy(() => import('./pages/tools/SpatialMappingPage'));
+const ExperimentalDesignPage = lazy(() => import('./pages/tools/ExperimentalDesignPage'));
+const SubstratePage = lazy(() => import('./pages/tools/SubstratePage'));
+const ProvenancePage = lazy(() => import('./pages/tools/ProvenancePage'));
+const MortalityPage = lazy(() => import('./pages/tools/MortalityPage'));
+const AuditPage = lazy(() => import('./pages/tools/AuditPage'));
+const IrrigationPage = lazy(() => import('./pages/tools/IrrigationPage'));
+const BatchListPage = lazy(() => import('./pages/nursery/BatchListPage'));
+const BatchDetailPage = lazy(() => import('./pages/nursery/BatchDetailPage'));
+const NewBatchPage = lazy(() => import('./pages/nursery/NewBatchPage'));
+const RecordsPage = lazy(() => import('./pages/records/RecordsPage'));
+const SeedLotsPage = lazy(() => import('./pages/records/SeedLotsPage'));
+const SpeciesDBPage = lazy(() => import('./pages/species/SpeciesDBPage'));
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { loading, user } = useAuth();
@@ -88,6 +83,7 @@ const AppRoutes = () => {
           <Route path="tools/provenance" element={<ProvenancePage />} />
           <Route path="tools/mortality" element={<MortalityPage />} />
           <Route path="tools/audit" element={<AuditPage />} />
+          <Route path="tools/irrigation" element={<IrrigationPage />} />
           <Route path="calc" element={<CalcPage />} />
           <Route path="chat" element={<ChatPage />} />
 

@@ -1,36 +1,11 @@
-import React, { useState } from 'react';
+import React, { Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Wrench, Calculator, MessageSquare, Settings } from 'lucide-react';
+import { Home, Wrench, Calculator, MessageSquare, Settings, Sprout, ClipboardList, BookOpen } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
-
-const TopHeader = () => {
-  const navigate = useNavigate();
-  return (
-    <header className="sticky top-0 z-50 bg-white/95 border-b border-gray-200">
-      <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 h-14 flex justify-between items-center">
-        <div className="flex items-center gap-2.5">
-          <GreenhouseMark />
-          <div className="leading-tight">
-            <span className="font-semibold text-[15px] text-gray-900 block">AgroClimatic</span>
-            <span className="text-[10px] text-gray-500 font-mono-sci">Nursery research lab · v1.2</span>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate('/settings')}
-          aria-label="Settings"
-          className="p-2 -mr-2 text-gray-500 hover:text-green-700 hover:bg-green-50 transition-colors rounded-md"
-        >
-          <Settings className="w-5 h-5" strokeWidth={2} />
-        </button>
-      </div>
-    </header>
-  );
-};
 
 // Gable-roof greenhouse with a seedling inside: the app's mark.
 const GreenhouseMark = () => (
-  <div className="w-9 h-9 rounded-md bg-green-700 flex items-center justify-center">
+  <div className="w-9 h-9 rounded-md bg-green-700 flex items-center justify-center shrink-0">
     <svg viewBox="0 0 24 24" className="w-6 h-6 text-green-100" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 11 12 4l9 7" />
       <path d="M5 9.5V20h14V9.5" />
@@ -41,41 +16,82 @@ const GreenhouseMark = () => (
   </div>
 );
 
-const navItems = [
+const primaryNav = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/tools', icon: Wrench, label: 'Tools' },
   { to: '/calc', icon: Calculator, label: 'Calc' },
   { to: '/chat', icon: MessageSquare, label: 'AgroBot' },
 ];
 
-const BottomNav = () => {
-  const location = useLocation();
+// Extra shortcuts shown in the desktop sidebar
+const secondaryNav = [
+  { to: '/nursery', icon: Sprout, label: 'Batches' },
+  { to: '/records', icon: ClipboardList, label: 'Records' },
+  { to: '/species', icon: BookOpen, label: 'Species' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
+];
 
-  const getIsActive = (to: string) => {
-    if (to === '/') return location.pathname === '/';
-    return location.pathname.startsWith(to);
-  };
+const isActive = (pathname: string, to: string) => (to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`));
 
+const TopHeader = () => {
+  const navigate = useNavigate();
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-    >
-      <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex justify-around items-stretch h-16">
-        {navItems.map(({ to, icon: Icon, label }) => {
-          const active = getIsActive(to);
+    <header className="sticky top-0 z-50 bg-white/95 border-b border-gray-200 lg:hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <div className="max-w-2xl mx-auto px-4 h-14 flex justify-between items-center">
+        <div className="flex items-center gap-2.5">
+          <GreenhouseMark />
+          <div className="leading-tight">
+            <span className="font-semibold text-[15px] text-gray-900 block">AgroClimatic</span>
+            <span className="text-[10px] text-gray-500 font-mono-sci">Nursery research lab</span>
+          </div>
+        </div>
+        <button onClick={() => navigate('/settings')} aria-label="Settings" className="p-2 -mr-2 text-gray-500 hover:text-green-700 hover:bg-green-50 transition-colors rounded-md">
+          <Settings className="w-5 h-5" strokeWidth={2} />
+        </button>
+      </div>
+    </header>
+  );
+};
+
+const SideNav = () => {
+  const { pathname } = useLocation();
+  const item = ({ to, icon: Icon, label }: (typeof primaryNav)[number]) => {
+    const active = isActive(pathname, to);
+    return (
+      <NavLink key={to} to={to} end={to === '/'} aria-current={active ? 'page' : undefined}
+        className={cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors', active ? 'bg-green-50 text-green-900 font-medium' : 'text-gray-700 hover:bg-gray-100')}>
+        <Icon className={cn('w-[18px] h-[18px]', active ? 'text-green-700' : 'text-gray-500')} strokeWidth={1.8} />
+        {label === 'Calc' ? 'Calculators' : label}
+      </NavLink>
+    );
+  };
+  return (
+    <aside className="hidden lg:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-gray-200 bg-white px-3 py-4 gap-6">
+      <div className="flex items-center gap-2.5 px-2">
+        <GreenhouseMark />
+        <div className="leading-tight">
+          <span className="font-semibold text-[15px] text-gray-900 block">AgroClimatic</span>
+          <span className="text-[10px] text-gray-500 font-mono-sci">Nursery research lab</span>
+        </div>
+      </div>
+      <nav aria-label="Main" className="flex flex-col gap-1">{primaryNav.map(item)}</nav>
+      <nav aria-label="Shortcuts" className="flex flex-col gap-1 border-t border-gray-100 pt-4">{secondaryNav.map(item)}</nav>
+    </aside>
+  );
+};
+
+const BottomNav = () => {
+  const { pathname } = useLocation();
+  return (
+    <nav aria-label="Main" className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="max-w-2xl mx-auto flex justify-around items-stretch h-16">
+        {primaryNav.map(({ to, icon: Icon, label }) => {
+          const active = isActive(pathname, to);
           return (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className="relative flex-1 flex flex-col items-center justify-center gap-1"
-            >
-              <span className={cn("absolute top-0 h-0.5 w-10 rounded-b transition-colors", active ? "bg-green-700" : "bg-transparent")} />
-              <Icon className={cn("w-5 h-5 transition-colors", active ? "text-green-700" : "text-gray-400")} strokeWidth={2} />
-              <span className={cn("text-[11px] font-medium transition-colors", active ? "text-green-800" : "text-gray-500")}>
-                {label}
-              </span>
+            <NavLink key={to} to={to} end={to === '/'} aria-current={active ? 'page' : undefined} className="relative flex-1 flex flex-col items-center justify-center gap-1">
+              <span className={cn('absolute top-0 h-0.5 w-10 rounded-b transition-colors', active ? 'bg-green-700' : 'bg-transparent')} />
+              <Icon className={cn('w-5 h-5 transition-colors', active ? 'text-green-700' : 'text-gray-500')} strokeWidth={2} />
+              <span className={cn('text-[11px] font-medium transition-colors', active ? 'text-green-800' : 'text-gray-600')}>{label}</span>
             </NavLink>
           );
         })}
@@ -86,52 +102,17 @@ const BottomNav = () => {
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [direction, setDirection] = useState(0);
-
-  const currentIndex = navItems.findIndex(item => {
-    if (item.to === '/') return location.pathname === '/';
-    return location.pathname.startsWith(item.to);
-  });
-
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    // SECURITY: Disable swiping if user is focused on an input or if we're in Chat
-    const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '');
-    if (isInput) return;
-
-    const swipeThreshold = 80; // Increased threshold for intentional swipes
-    if (currentIndex === -1) return;
-
-    if (info.offset.x < -swipeThreshold && currentIndex < navItems.length - 1) {
-      setDirection(1);
-      navigate(navItems[currentIndex + 1].to);
-    } else if (info.offset.x > swipeThreshold && currentIndex > 0) {
-      setDirection(-1);
-      navigate(navItems[currentIndex - 1].to);
-    }
-  };
-
   return (
-    <div className="min-h-screen pb-24 flex flex-col font-sans selection:bg-green-200">
+    <div className="min-h-screen flex flex-col selection:bg-green-200">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:bg-white focus:px-3 focus:py-2 focus:rounded-md focus:border focus:border-green-700">Skip to content</a>
       <TopHeader />
-      <main className="flex-1 max-w-md mx-auto px-4 pt-5 md:max-w-2xl lg:max-w-4xl w-full overflow-x-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={location.pathname}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -24 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.05} // Lower elasticity to prevent jumpy feeling
-            onDragEnd={handleDragEnd}
-            className="w-full h-full touch-pan-y"
-          >
+      <SideNav />
+      <main id="main" className="flex-1 w-full px-4 pt-5 pb-24 lg:pb-10 lg:pl-60">
+        <div key={location.pathname} className="max-w-2xl mx-auto lg:max-w-4xl lg:px-8">
+          <Suspense fallback={<p className="text-sm text-gray-500 py-8 text-center">Loading…</p>}>
             <Outlet />
-          </motion.div>
-        </AnimatePresence>
+          </Suspense>
+        </div>
       </main>
       <BottomNav />
     </div>

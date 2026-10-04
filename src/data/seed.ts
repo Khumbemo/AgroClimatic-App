@@ -1,8 +1,9 @@
 import type { Repository } from './repository';
 import type { KeyValueStorage } from './localBackend';
-import type { Batch, SeedLot, Species } from './schema';
+import type { Batch, ClimateReading, GerminationCount, GrowthMeasurement, SeedLot, Species } from './schema';
 
-const seededKey = (scope: string) => `ac.v2.seeded.${scope}`;
+// v3: example observations added for the demo dashboard
+const seededKey = (scope: string) => `ac.v3.seeded.${scope}`;
 const T0 = '2024-01-01T00:00:00.000Z';
 
 /** Reference species list. Seed storage behaviour per published storage studies. */
@@ -33,6 +34,28 @@ const EXAMPLE_BATCHES: Batch[] = [
   },
 ];
 
+/** A week of example greenhouse readings ending on `today`, so the demo dashboard is populated. */
+const exampleClimate = (today: Date): ClimateReading[] =>
+  [
+    [14.2, 27.8, 66, 430], [13.8, 28.4, 64, 455], [15.1, 26.9, 71, 380], [14.6, 27.2, 68, 410],
+    [13.9, 29.1, 61, 470], [14.8, 28.0, 65, 445], [15.0, 27.5, 68, 412],
+  ].map(([tMin, tMax, rh, par], i) => {
+    const d = new Date(today.getTime() - (6 - i) * 86_400_000).toISOString().slice(0, 10);
+    return {
+      id: `ex-cl-${i + 1}`, date: d, tempMin: tMin, tempMax: tMax, tempMean: +((tMin + tMax) / 2).toFixed(1), humidity: rh,
+      lightIntensity: par, photoperiod: 12, isExample: true, createdAt: T0, updatedAt: T0,
+    };
+  });
+
+const EXAMPLE_COUNTS: GerminationCount[] = [
+  ['2024-03-15', 120], ['2024-03-18', 300], ['2024-03-22', 180], ['2024-03-26', 40],
+].map(([date, count], i) => ({ id: `ex-gc-${i + 1}`, batchId: 'ex-nb-2024-001', date: date as string, count: count as number, isExample: true, createdAt: T0, updatedAt: T0 }));
+
+const EXAMPLE_GROWTH: GrowthMeasurement[] = [
+  { id: 'ex-gm-1', batchId: 'ex-nb-2024-001', date: '2024-04-20', sampleSize: 30, avgHeightCm: 4.1, avgRCDmm: 1.1, isExample: true, createdAt: T0, updatedAt: T0 },
+  { id: 'ex-gm-2', batchId: 'ex-nb-2024-001', date: '2024-05-20', sampleSize: 30, avgHeightCm: 7.9, avgRCDmm: 1.9, shootDryWeight: 0.62, rootDryWeight: 0.31, isExample: true, createdAt: T0, updatedAt: T0 },
+];
+
 /**
  * Add reference data once per scope. Example records are only added in demo mode and only
  * into an empty store, so real accounts never receive invented records.
@@ -51,6 +74,11 @@ export async function seedOnce(repo: Repository, storage: KeyValueStorage | null
   if (examples) {
     if ((await repo.list('seedLots')).length === 0) for (const l of EXAMPLE_SEED_LOTS) await repo.put('seedLots', l);
     if ((await repo.list('batches')).length === 0) for (const b of EXAMPLE_BATCHES) await repo.put('batches', b);
+    if ((await repo.list('climateReadings')).length === 0) for (const c of exampleClimate(new Date())) await repo.put('climateReadings', c);
+    // Example observations only attach to the example batch, and only if it is still there and empty.
+    const exampleBatch = (await repo.list('batches')).some(b => b.id === 'ex-nb-2024-001');
+    if (exampleBatch && !(await repo.list('germinationCounts')).some(c => c.batchId === 'ex-nb-2024-001')) for (const c of EXAMPLE_COUNTS) await repo.put('germinationCounts', c);
+    if (exampleBatch && !(await repo.list('growthMeasurements')).some(g => g.batchId === 'ex-nb-2024-001')) for (const g of EXAMPLE_GROWTH) await repo.put('growthMeasurements', g);
   }
 
   try {

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Beaker, Wind, BarChart3, ChevronRight, ArrowLeft, Plus, X } from 'lucide-react';
-import { calculateVPD, getVpdBand } from '../../utils/calculations';
+import { calculateVPD, fertilizerMassG, getVpdBand } from '../../utils/calculations';
 import VpdScale from '../../components/sci/VpdScale';
 import { vpdToneChip } from '../../components/sci/vpdTone';
 
@@ -10,7 +10,7 @@ const inputCls = 'w-full mt-1.5 px-3 py-2.5 rounded-md border border-gray-300 bg
 
 const Field = ({ id, label, unit, value, onChange, step, placeholder }: { id: string; label: string; unit: string; value: string; onChange: (v: string) => void; step: string; placeholder: string }) => (
   <div>
-    <label htmlFor={id} className="sci-label">{label} <span className="normal-case tracking-normal font-mono-sci text-gray-400">({unit})</span></label>
+    <label htmlFor={id} className="sci-label">{label} <span className="normal-case tracking-normal font-mono-sci text-gray-500">({unit})</span></label>
     <input id={id} type="number" step={step} value={value} onChange={e => onChange(e.target.value)} className={inputCls} placeholder={placeholder} />
   </div>
 );
@@ -80,8 +80,8 @@ const CalcPage = () => {
     const ppm = parseFloat(ppmTarget);
     const v = parseFloat(ppmVolume);
     const e = parseFloat(ppmElement);
-    if (isNaN(ppm) || isNaN(v) || isNaN(e) || e <= 0) return null;
-    return ((ppm * v) / (e * 10)).toFixed(2);
+    if (isNaN(ppm) || isNaN(v) || isNaN(e)) return null;
+    return fertilizerMassG(ppm, v, e)?.toFixed(2) ?? null;
   };
   const ppmResult = getPpmMass();
 
@@ -138,7 +138,7 @@ const CalcPage = () => {
               <div key={idx} className="grid grid-cols-[5rem_1fr_2.5rem] items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-b-0">
                 <input aria-label={`Day for row ${idx + 1}`} type="number" value={item.day} onChange={e => { const n = [...griCounts]; n[idx].day = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
                 <input aria-label={`Germinants for row ${idx + 1}`} type="number" value={item.count} onChange={e => { const n = [...griCounts]; n[idx].count = e.target.value; setGriCounts(n); }} className="w-full px-2 py-1.5 rounded border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-500" />
-                <button aria-label={`Remove row ${idx + 1}`} onClick={() => setGriCounts(griCounts.filter((_, i) => i !== idx))} className="p-1.5 text-gray-400 hover:text-red-600 justify-self-end"><X className="w-4 h-4" /></button>
+                <button aria-label={`Remove row ${idx + 1}`} onClick={() => setGriCounts(griCounts.filter((_, i) => i !== idx))} className="p-1.5 text-gray-500 hover:text-red-600 justify-self-end"><X className="w-4 h-4" /></button>
               </div>
             ))}
           </div>
@@ -181,7 +181,7 @@ const CalcPage = () => {
               <h3 className="text-sm font-medium text-gray-900">{calc.title}</h3>
               <p className="text-xs text-gray-500">{calc.desc}</p>
             </div>
-            <span className="font-mono-sci text-[11px] text-gray-400 shrink-0">{calc.unit}</span>
+            <span className="font-mono-sci text-[11px] text-gray-500 shrink-0">{calc.unit}</span>
             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-green-700" />
           </button>
         ))}

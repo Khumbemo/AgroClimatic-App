@@ -1,189 +1,134 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Ruler, X } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Ruler } from 'lucide-react';
 import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
-import { saveErrorMessage } from '../../data/errors';
+import { calculateRGR, daysAfterSowing, dicksonQualityIndex, sturdinessQuotient } from '../../utils/calculations';
+import { Page, PageHeader, Section } from '../../components/ui/Page';
+import { Chip, ChartFrame, EmptyState, Stat, StatGrid } from '../../components/ui/Display';
+import { FieldGroup, FieldShell, TextField } from '../../components/ui/Field';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import RecordList from '../../components/ui/RecordList';
 import FormError from '../../components/data/FormError';
 import BatchSelect from '../../components/data/BatchSelect';
+import GrowthChart from '../../components/nursery/GrowthChart';
+import { num, req, today, useRecordForm } from '../../components/ui/useRecordForm';
+
+const f = (v: number | null | undefined, d = 2) => (v == null ? '—' : v.toFixed(d));
 
 const MorphometricsPage = () => {
-  const navigate = useNavigate();
   const { repo } = useData();
-  const { label } = useBatchIndex();
-  const { items } = useCollection('growthMeasurements');
-  const logs = [...items].sort(byDateDesc);
-  const [error, setError] = useState<string | null>(null);
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    sampleSize: '30',
-    avgHeightCm: '',
-    avgRCDmm: '',
-    avgLeaves: '',
-    leafAreaIndex: '',
-    spadValue: '',
-    shootFreshWeight: '',
-    rootFreshWeight: '',
-    shootDryWeight: '',
-    rootDryWeight: '',
-  });
+  const { label, batches } = useBatchIndex();
+  const { items, ready } = useCollection('growthMeasurements');
+  const [filter, setFilter] = useState<string | null>(null);
+  const batchId = filter ?? [...items].sort(byDateDesc)[0]?.batchId ?? null;
+  const rows = items.filter(g => !batchId || g.batchId === batchId).sort(byDateDesc);
+  const series = [...rows].reverse();
+  const latest = rows[0];
+  const first = series[0];
+  const span = first && latest ? daysAfterSowing(latest.date, first.date) : 0;
+  const rgr = first && latest && span > 0 ? calculateRGR(first.avgHeightCm, latest.avgHeightCm, span) : null;
+  const withMass = rows.find(g => g.shootDryWeight && g.rootDryWeight);
 
-
-  const optional = (v: string) => (v === '' ? undefined : parseFloat(v));
-
-  const saveLog = async () => {
-    if (!batchId) { setError('Select the batch you measured.'); return; }
-    if (!form.avgHeightCm || !form.avgRCDmm) { setError('Enter mean height and root-collar diameter.'); return; }
-    const newLog = {
-      batchId,
-      date: form.date,
-      sampleSize: parseInt(form.sampleSize) || 30,
-      avgHeightCm: parseFloat(form.avgHeightCm),
-      avgRCDmm: parseFloat(form.avgRCDmm),
-      avgLeaves: parseFloat(form.avgLeaves) || 0,
-      leafAreaIndex: form.leafAreaIndex ? parseFloat(form.leafAreaIndex) : undefined,
-      spadValue: optional(form.spadValue),
-      shootFreshWeight: optional(form.shootFreshWeight),
-      rootFreshWeight: optional(form.rootFreshWeight),
-      shootDryWeight: optional(form.shootDryWeight),
-      rootDryWeight: optional(form.rootDryWeight),
-    };
-    try {
-      await repo.add('growthMeasurements', newLog);
-    } catch (e) {
-      setError(saveErrorMessage(e));
-      return;
-    }
-    setError(null);
-    setShowForm(false);
-    setForm({ ...form, avgHeightCm: '', avgRCDmm: '', avgLeaves: '', leafAreaIndex: '', spadValue: '', shootFreshWeight: '', rootFreshWeight: '', shootDryWeight: '', rootDryWeight: '' });
-  };
-
-  // Derived metrics
-  const latest = logs[0];
-  const srRatio = latest?.shootDryWeight && latest?.rootDryWeight
-    ? (latest.shootDryWeight / latest.rootDryWeight).toFixed(2) : '—';
-  const sturdiness = latest
-    ? (latest.avgHeightCm / latest.avgRCDmm).toFixed(2) : '—';
-  const dqi = latest?.shootDryWeight && latest?.rootDryWeight
-    ? ((latest.shootDryWeight + latest.rootDryWeight) / (parseFloat(sturdiness) + (latest.shootDryWeight / latest.rootDryWeight))).toFixed(2) : '—';
+  const form = useRecordForm(() => ({
+    batchId: null as string | null, date: today(), sampleSize: '30', avgHeightCm: '', avgRCDmm: '', avgLeaves: '', leafAreaIndex: '',
+    spadValue: '', shootFreshWeight: '', rootFreshWeight: '', shootDryWeight: '', rootDryWeight: '',
+  }));
+  const v = form.values;
+  const save = () =>
+    form.submit(async () => {
+      if (!v.batchId) throw new Error('Select the batch you measured.');
+      await repo.add('growthMeasurements', {
+        batchId: v.batchId, date: v.date, sampleSize: req(v.sampleSize), avgHeightCm: req(v.avgHeightCm), avgRCDmm: req(v.avgRCDmm),
+        avgLeaves: num(v.avgLeaves), leafAreaIndex: num(v.leafAreaIndex), spadValue: num(v.spadValue),
+        shootFreshWeight: num(v.shootFreshWeight), rootFreshWeight: num(v.rootFreshWeight),
+        shootDryWeight: num(v.shootDryWeight), rootDryWeight: num(v.rootDryWeight),
+      });
+      setFilter(v.batchId);
+    }, { keep: ['batchId', 'date', 'sampleSize'] });
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/tools')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Morphometrics</h1>
-          
-        </div>
-        <button onClick={() => setShowForm(true)} className="bg-green-700 hover:bg-green-800 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform">
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+    <Page>
+      <PageHeader title="Morphometrics" subtitle="Seedling height, root-collar diameter and biomass, with quality indices." back="/tools"
+        actions={<Button icon={<Plus className="w-4 h-4" />} onClick={() => { form.set('batchId')(batchId); form.openForm(); }} disabled={!batches.length}>Measure</Button>} />
 
-      {/* Derived Quality Indices */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bento-card p-4">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">H/D Ratio</span>
-          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{sturdiness}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Sturdiness</div>
-        </div>
-        <div className="bento-card p-4">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">S/R Ratio</span>
-          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{srRatio}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Shoot/Root</div>
-        </div>
-        <div className="bento-card p-4">
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">DQI</span>
-          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{dqi}</div>
-          <div className="text-[8px] text-gray-400 font-mono-sci">Dickson Index</div>
-        </div>
-      </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="font-semibold text-lg text-gray-900">New Measurement</h2>
-              <button onClick={() => { setShowForm(false); setError(null); }} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="morph-batch" className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch</label>
-                <BatchSelect id="morph-batch" value={batchId} onChange={setBatchId} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Date</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Sample (n)</label><input type="number" value={form.sampleSize} onChange={e => setForm({...form, sampleSize: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Non-Destructive Measurements</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Height (cm)</label><input type="number" step="0.1" placeholder="15.2" value={form.avgHeightCm} onChange={e => setForm({...form, avgHeightCm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">RCD (mm)</label><input type="number" step="0.01" placeholder="4.20" value={form.avgRCDmm} onChange={e => setForm({...form, avgRCDmm: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Leaves (#)</label><input type="number" step="1" placeholder="6" value={form.avgLeaves} onChange={e => setForm({...form, avgLeaves: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">SPAD Value</label><input type="number" step="0.1" placeholder="42.5" value={form.spadValue} onChange={e => setForm({...form, spadValue: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                </div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Destructive Sampling (Optional)</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Shoot FW (g)</label><input type="number" step="0.01" placeholder="5.20" value={form.shootFreshWeight} onChange={e => setForm({...form, shootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Root FW (g)</label><input type="number" step="0.01" placeholder="3.40" value={form.rootFreshWeight} onChange={e => setForm({...form, rootFreshWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Shoot DW (g)</label><input type="number" step="0.01" placeholder="2.45" value={form.shootDryWeight} onChange={e => setForm({...form, shootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                  <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Root DW (g)</label><input type="number" step="0.01" placeholder="1.80" value={form.rootDryWeight} onChange={e => setForm({...form, rootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
-                </div>
-              </div>
-              <FormError message={error} />
-              <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Record Measurement</button>
-            </div>
-          </div>
-        </div>
+      {items.length > 0 && (
+        <Section>
+          <FieldShell id="morph-filter" label="Batch">
+            <BatchSelect id="morph-filter" value={batchId} onChange={setFilter} />
+          </FieldShell>
+        </Section>
       )}
 
-      {/* Entries */}
-      {logs.length === 0 ? (
-        <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200">
-          <Ruler className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="font-bold text-sm text-gray-500">No morphometric data recorded.</p>
-          
-        </div>
+      {latest && (
+        <StatGrid cols={4}>
+          <Stat label="Height" value={f(latest.avgHeightCm, 1)} unit="cm" note={`n = ${latest.sampleSize} · ${latest.date}`} />
+          <Stat label="Root-collar Ø" value={f(latest.avgRCDmm)} unit="mm" />
+          <Stat label="Sturdiness" value={f(sturdinessQuotient(latest.avgHeightCm, latest.avgRCDmm), 1)} unit="cm mm⁻¹" formula="H / D" />
+          <Stat label="RGR height" value={rgr != null ? rgr.toFixed(3) : '—'} unit="d⁻¹" formula="(ln H₂ − ln H₁) / Δt" note={span > 0 ? `over ${span} days` : 'needs 2 dates'} />
+          <Stat label="Shoot : root" value={withMass ? f(withMass.shootDryWeight! / withMass.rootDryWeight!) : '—'} formula="dry mass ratio" />
+          <Stat label="Dickson index" value={withMass ? f(dicksonQualityIndex(withMass.avgHeightCm, withMass.avgRCDmm, withMass.shootDryWeight!, withMass.rootDryWeight!)) : '—'} formula="TDM / (H/D + S/R)" note={withMass ? withMass.date : 'needs dry masses'} />
+        </StatGrid>
+      )}
+
+      {series.length >= 2 && (
+        <ChartFrame title="Growth" caption="Mean height (left axis) and root-collar diameter (right axis) per measurement date.">
+          <GrowthChart labels={series.map(g => g.date.slice(5))} heightData={series.map(g => g.avgHeightCm)} rcdData={series.map(g => g.avgRCDmm)} />
+        </ChartFrame>
+      )}
+
+      {ready && items.length === 0 ? (
+        <EmptyState icon={Ruler} title="No measurements yet" text="Measure a sample of seedlings (e.g. n = 30) and record the means. Add dry masses after destructive sampling to get the Dickson index." action={batches.length ? <Button onClick={form.openForm}>Add measurement</Button> : undefined} />
       ) : (
-        <div className="space-y-3">
-          {logs.map(log => (
-            <div key={log.id} className="bento-card p-4 border border-gray-200">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-medium text-gray-700">{label(log.batchId, log.legacyBatchLabel)}</span>
-                <span className="font-mono-sci text-[10px] text-gray-400">{log.date} · n={log.sampleSize}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.avgHeightCm}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">H (cm)</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.avgRCDmm}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">RCD (mm)</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.avgLeaves}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">Leaves</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="font-mono-sci text-xs font-bold text-gray-800">{log.shootDryWeight ? `${log.shootDryWeight}/${log.rootDryWeight}` : '—'}</div>
-                  <div className="text-[8px] text-gray-400 uppercase">S/R (g)</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <RecordList
+          label="Growth measurements"
+          onDelete={id => repo.remove('growthMeasurements', id)}
+          rows={rows.map(g => ({
+            id: g.id,
+            title: label(g.batchId, g.legacyBatchLabel),
+            meta: `${g.date} · n = ${g.sampleSize}`,
+            badges: g.isExample ? <Chip>Example</Chip> : undefined,
+            values: [
+              { label: 'Height', value: g.avgHeightCm, unit: 'cm' },
+              { label: 'RCD', value: g.avgRCDmm, unit: 'mm' },
+              { label: 'H/D', value: f(sturdinessQuotient(g.avgHeightCm, g.avgRCDmm), 1) },
+              ...(g.shootDryWeight && g.rootDryWeight
+                ? [{ label: 'DQI', value: f(dicksonQualityIndex(g.avgHeightCm, g.avgRCDmm, g.shootDryWeight, g.rootDryWeight)) }]
+                : []),
+              ...(g.spadValue != null ? [{ label: 'SPAD', value: g.spadValue }] : []),
+              ...(g.leafAreaIndex != null ? [{ label: 'LAI', value: g.leafAreaIndex }] : []),
+            ],
+          }))}
+        />
       )}
-    </div>
+
+      <Sheet open={form.open} title="New measurement" onClose={form.close}>
+        <FieldShell id="morph-batch" label="Batch"><BatchSelect id="morph-batch" value={v.batchId} onChange={form.set('batchId')} /></FieldShell>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField id="m-date" type="date" label="Date" value={v.date} onChange={form.set('date')} />
+          <TextField id="m-n" type="number" step="1" min={1} label="Sample size" unit="n" value={v.sampleSize} onChange={form.set('sampleSize')} />
+        </div>
+        <FieldGroup title="Non-destructive (means)">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField id="m-h" type="number" step="0.1" label="Height" unit="cm" value={v.avgHeightCm} onChange={form.set('avgHeightCm')} placeholder="15.2" />
+            <TextField id="m-d" type="number" step="0.01" label="Root-collar Ø" unit="mm" value={v.avgRCDmm} onChange={form.set('avgRCDmm')} placeholder="4.20" />
+            <TextField id="m-leaves" type="number" step="1" label="Leaves" unit="count" value={v.avgLeaves} onChange={form.set('avgLeaves')} />
+            <TextField id="m-spad" type="number" step="0.1" label="SPAD" value={v.spadValue} onChange={form.set('spadValue')} />
+            <TextField id="m-lai" type="number" step="0.01" label="Leaf area index" value={v.leafAreaIndex} onChange={form.set('leafAreaIndex')} />
+          </div>
+        </FieldGroup>
+        <FieldGroup title="Destructive sample (optional)">
+          <div className="grid grid-cols-2 gap-3">
+            <TextField id="m-sfw" type="number" step="0.001" label="Shoot fresh" unit="g" value={v.shootFreshWeight} onChange={form.set('shootFreshWeight')} />
+            <TextField id="m-rfw" type="number" step="0.001" label="Root fresh" unit="g" value={v.rootFreshWeight} onChange={form.set('rootFreshWeight')} />
+            <TextField id="m-sdw" type="number" step="0.001" label="Shoot dry" unit="g" value={v.shootDryWeight} onChange={form.set('shootDryWeight')} />
+            <TextField id="m-rdw" type="number" step="0.001" label="Root dry" unit="g" value={v.rootDryWeight} onChange={form.set('rootDryWeight')} />
+          </div>
+          <p className="text-[11px] text-gray-500">Mean dry mass per seedling, oven-dried to constant weight.</p>
+        </FieldGroup>
+        <FormError message={form.error} />
+        <Button block onClick={save} disabled={form.saving}>Save measurement</Button>
+      </Sheet>
+    </Page>
   );
 };
 

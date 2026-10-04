@@ -35,23 +35,32 @@ const BatchFormPage: React.FC = () => {
   const { items: species } = useCollection('species');
   const { items: batches, ready } = useCollection('batches');
   const existing = id ? batches.find(b => b.id === id) : undefined;
+  // Records that point at this batch; a batch with records can't be deleted.
+  const linked = [
+    useCollection('germinationCounts').items, useCollection('growthMeasurements').items, useCollection('fertigationEvents').items,
+    useCollection('pestObservations').items, useCollection('preSowingTreatments').items, useCollection('mortalityEvents').items,
+    useCollection('leachateTests').items, useCollection('irrigationEvents').items,
+  ].reduce((n, rows) => n + rows.filter(r => r.batchId === id).length, 0)
+    + useCollection('greenhouses').items.reduce((n, g) => n + g.placements.filter(p => p.batchId === id).length, 0);
 
   if (id && !ready) return <p className="text-sm text-gray-500">Loading…</p>;
   if (id && !existing) return <p className="text-sm text-gray-500">This batch no longer exists.</p>;
-  return <BatchForm key={existing?.id ?? 'new'} existing={existing} species={species} onDone={target => navigate(target, { replace: true })} onBack={() => navigate(-1)} repo={repo} />;
+  return <BatchForm key={existing?.id ?? 'new'} existing={existing} linked={linked} species={species} onDone={target => navigate(target, { replace: true })} onBack={() => navigate(-1)} repo={repo} />;
 };
 
 type BatchFormProps = {
   existing?: Batch;
+  linked: number;
   species: readonly { id: string; botanicalName: string }[];
   onDone: (path: string) => void;
   onBack: () => void;
   repo: ReturnType<typeof useData>['repo'];
 };
 
-const BatchForm = ({ existing, species, onDone, onBack, repo }: BatchFormProps) => {
+const BatchForm = ({ existing, linked, species, onDone, onBack, repo }: BatchFormProps) => {
   const [form, setForm] = useState<FormState>(() => (existing ? fromBatch(existing) : emptyForm()));
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
   const optionalNumber = (v: string) => (v === '' ? null : Number(v));
 
@@ -157,6 +166,22 @@ const BatchForm = ({ existing, species, onDone, onBack, repo }: BatchFormProps) 
           {existing ? 'Save changes' : 'Create batch'}
         </button>
       </form>
+
+      {existing && (
+        <div className="border-t border-gray-200 pt-4">
+          {linked > 0 ? (
+            <p className="text-xs text-gray-500">This batch has {linked} linked record{linked === 1 ? '' : 's'} (counts, measurements, treatments or bench positions), so it can't be deleted. Set its stage to “outplanted” when it leaves the nursery.</p>
+          ) : !confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)} className="text-sm text-red-700 hover:underline">Delete this batch</button>
+          ) : (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-md p-2">
+              <span className="text-xs text-red-800 mr-auto">Delete {existing.batchNumber}? This can't be undone.</span>
+              <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 text-xs rounded-md border border-gray-300 bg-white">Cancel</button>
+              <button onClick={async () => { await repo.remove('batches', existing.id); onDone('/nursery'); }} className="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white">Delete</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

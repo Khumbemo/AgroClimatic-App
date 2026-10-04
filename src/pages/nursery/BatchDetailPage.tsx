@@ -4,11 +4,10 @@ import { ArrowLeft, Info, Beaker, TrendingUp, Pencil, AlertTriangle, Sprout, Rul
 import GrowthChart from '../../components/nursery/GrowthChart';
 import GerminationChart from '../../components/nursery/GerminationChart';
 import { cn } from '../../utils/cn';
-import { calculateRGR } from '../../utils/calculations';
+import { calculateRGR, cumulativeGermination, daysAfterSowing, dicksonQualityIndex, germinationEnergy, germinationPercent, meanGerminationTime, sturdinessQuotient } from '../../utils/calculations';
 import { useBatchIndex, useCollection } from '../../data/hooks';
 
-const DAY_MS = 86400000;
-const daysBetween = (from: string, to: string) => Math.round((new Date(to).getTime() - new Date(from).getTime()) / DAY_MS);
+const daysBetween = (from: string, to: string) => daysAfterSowing(to, from);
 
 const Stat = ({ label, value, unit, note }: { label: string; value: string; unit?: string; note?: string }) => (
   <div className="bento-card p-4">
@@ -33,6 +32,8 @@ const BatchDetailPage: React.FC = () => {
   const pests = useCollection('pestObservations').items.filter(r => r.batchId === id);
   const deaths = useCollection('mortalityEvents').items.filter(r => r.batchId === id);
   const presow = useCollection('preSowingTreatments').items.filter(r => r.batchId === id);
+  const irrigation = useCollection('irrigationEvents').items.filter(r => r.batchId === id);
+  const leachate = useCollection('leachateTests').items.filter(r => r.batchId === id);
 
   const batch = id ? byId.get(id) : undefined;
   if (!ready) return <p className="text-sm text-gray-500">Loading…</p>;
@@ -51,15 +52,12 @@ const BatchDetailPage: React.FC = () => {
   // --- germination: days after sowing, daily and cumulative ---
   const germ = [...counts].sort((a, b) => a.date.localeCompare(b.date));
   const totalGerm = germ.reduce((s, c) => s + c.count, 0);
-  const germPct = batch.seedsSown ? (totalGerm / batch.seedsSown) * 100 : null;
+  const germPct = germinationPercent(germ, batch.seedsSown ?? 0);
   const sowing = batch.sowingDate;
   const germLabels = germ.map(c => (sowing ? `D${daysBetween(sowing, c.date)}` : c.date.slice(5)));
-  const cumPct = germ.map((_, i) => {
-    const running = germ.slice(0, i + 1).reduce((s, c) => s + c.count, 0);
-    return batch.seedsSown ? +((running / batch.seedsSown) * 100).toFixed(1) : 0;
-  });
-  // Mean germination time: Σ(tᵢ·nᵢ)/Σnᵢ with tᵢ in days after sowing
-  const mgt = sowing && totalGerm > 0 ? germ.reduce((s, c) => s + daysBetween(sowing, c.date) * c.count, 0) / totalGerm : null;
+  const cumPct = cumulativeGermination(germ, batch.seedsSown ?? 0).map(x => +x.toFixed(1));
+  const mgt = sowing ? meanGerminationTime(germ, sowing) : null;
+  const energy = sowing ? germinationEnergy(germ, batch.seedsSown ?? 0, sowing, 7) : null;
 
   // --- growth ---
   const grow = [...growth].sort((a, b) => a.date.localeCompare(b.date));
@@ -70,18 +68,18 @@ const BatchDetailPage: React.FC = () => {
   const rgrHeight = first && last && spanDays > 0 ? calculateRGR(first.avgHeightCm, last.avgHeightCm, spanDays) : null;
   // Dickson quality index from the latest measurement with dry masses
   const withMass = [...grow].reverse().find(g => g.shootDryWeight && g.rootDryWeight);
-  const dqi = withMass
-    ? (withMass.shootDryWeight! + withMass.rootDryWeight!) / (withMass.avgHeightCm / withMass.avgRCDmm + withMass.shootDryWeight! / withMass.rootDryWeight!)
-    : null;
+  const dqi = withMass ? dicksonQualityIndex(withMass.avgHeightCm, withMass.avgRCDmm, withMass.shootDryWeight!, withMass.rootDryWeight!) : null;
   const dead = deaths.reduce((s, d) => s + d.count, 0);
 
   const records = [
     { label: 'Germination counts', n: counts.length, to: '/tools/germination', icon: Sprout },
     { label: 'Growth measurements', n: growth.length, to: '/tools/morphometrics', icon: Ruler },
-    { label: 'Fertigation events', n: fert.length, to: '/tools/treatments', icon: Droplets },
-    { label: 'Pest observations', n: pests.length, to: '/tools/treatments', icon: Bug },
-    { label: 'Pre-sowing treatments', n: presow.length, to: '/tools/treatments', icon: FlaskConical },
+    { label: 'Fertigation events', n: fert.length, to: '/tools/treatments?tab=fertilizer', icon: Droplets },
+    { label: 'Pest observations', n: pests.length, to: '/tools/treatments?tab=pest', icon: Bug },
+    { label: 'Pre-sowing treatments', n: presow.length, to: '/tools/treatments?tab=presowing', icon: FlaskConical },
     { label: 'Mortality events', n: deaths.length, to: '/tools/mortality', icon: Skull },
+    { label: 'Irrigation events', n: irrigation.length, to: '/tools/irrigation', icon: Droplets },
+    { label: 'Leachate tests', n: leachate.length, to: '/tools/substrate', icon: FlaskConical },
   ];
 
   return (
@@ -164,7 +162,7 @@ const BatchDetailPage: React.FC = () => {
           )}
           <div className="grid grid-cols-2 gap-3">
             <Stat label="Mean germination time" value={mgt != null ? mgt.toFixed(1) : '—'} unit={mgt != null ? 'days' : undefined} note={sowing ? 'From sowing date' : 'Needs a sowing date'} />
-            <Stat label="Germinated" value={totalGerm.toLocaleString()} unit="seeds" note={batch.seedsSown ? undefined : 'Add seeds sown for %'} />
+            <Stat label="Energy (day 7)" value={energy != null ? energy.toFixed(1) : '—'} unit={energy != null ? '%' : undefined} note={`${totalGerm.toLocaleString()} germinated in total`} />
           </div>
         </div>
       )}
@@ -178,7 +176,7 @@ const BatchDetailPage: React.FC = () => {
           )}
           <div className="grid grid-cols-2 gap-3">
             <Stat label="Dickson quality index" value={dqi != null ? dqi.toFixed(2) : '—'} note={dqi != null ? `From ${withMass!.date}` : 'Needs shoot and root dry mass'} />
-            <Stat label="Sturdiness H/D" value={last ? (last.avgHeightCm / last.avgRCDmm).toFixed(1) : '—'} unit={last ? 'cm mm⁻¹' : undefined} />
+            <Stat label="Sturdiness H/D" value={last ? (sturdinessQuotient(last.avgHeightCm, last.avgRCDmm)?.toFixed(1) ?? '—') : '—'} unit={last ? 'cm mm⁻¹' : undefined} />
           </div>
         </div>
       )}

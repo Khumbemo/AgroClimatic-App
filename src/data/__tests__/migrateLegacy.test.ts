@@ -34,7 +34,7 @@ describe('migrateLegacy', () => {
     expect(counts.find(c => c.id === 'GL-1712000000000')).toMatchObject({ batchId: 'ex-nb-2024-001' });
     expect(counts.find(c => c.id === 'GL-1712000000001')).toMatchObject({ batchId: 'legacy-batch-001', legacyBatchLabel: 'BATCH-001' });
     // labels match case- and whitespace-insensitively
-    expect((await repo.list('growthMeasurements'))[0].batchId).toBe('legacy-batch-001');
+    expect((await repo.list('growthMeasurements')).find(g => g.id === 'ML-1')!.batchId).toBe('legacy-batch-001');
     // creation time recovered from the legacy id
     expect(counts.find(c => c.id === 'GL-1712000000000')!.createdAt).toBe(new Date(1712000000000).toISOString());
 
@@ -128,5 +128,10 @@ describe('seedOnce', () => {
     await seedOnce(demo, storage, { examples: true });
     expect(await demo.list('batches')).toHaveLength(2);
     expect((await demo.list('batches')).every(b => b.isExample)).toBe(true);
+    // example observations are seeded once and always labelled
+    expect(await demo.list('climateReadings')).toHaveLength(7);
+    expect((await demo.list('germinationCounts')).every(c => c.isExample && c.batchId === 'ex-nb-2024-001')).toBe(true);
+    // real accounts get no example observations
+    expect(await real.list('climateReadings')).toHaveLength(0);
   });
 });

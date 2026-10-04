@@ -1,4 +1,5 @@
 import { useBatchIndex } from '../../data/hooks';
+import { controlCls } from '../ui/Field';
 
 type Props = {
   id: string;
@@ -18,7 +19,7 @@ const BatchSelect = ({ id, value, onChange, allowWholeNursery, className }: Prop
       id={id}
       value={value ?? ''}
       onChange={e => onChange(e.target.value || null)}
-      className={className ?? 'w-full mt-1 p-3 rounded-lg border border-gray-200 bg-white text-sm outline-none focus:border-green-600'}
+      className={className ?? controlCls}
     >
       <option value="">{allowWholeNursery ? 'Whole nursery' : 'Select a batch'}</option>
       {sorted.map(b => (

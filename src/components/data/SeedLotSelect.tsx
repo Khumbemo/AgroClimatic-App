@@ -1,4 +1,5 @@
 import { useCollection } from '../../data/hooks';
+import { controlCls } from '../ui/Field';
 
 type Props = { id: string; value: string | null; onChange: (seedLotId: string | null) => void; className?: string };
 
@@ -11,7 +12,7 @@ const SeedLotSelect = ({ id, value, onChange, className }: Props) => {
       id={id}
       value={value ?? ''}
       onChange={e => onChange(e.target.value || null)}
-      className={className ?? 'w-full mt-1 p-3 rounded-lg border border-gray-200 bg-white text-sm outline-none focus:border-green-600'}
+      className={className ?? controlCls}
     >
       <option value="">No seed lot</option>
       {lots.map(l => (

@@ -15,7 +15,8 @@ const tools = [
     items: [
       { title: 'Environmental Logs', desc: 'Temperature range, RH, VPD, photoperiod', icon: ThermometerSun, to: '/tools/environmental' },
       { title: 'Germination Tracker', desc: 'Daily counts and mean germination time', icon: Activity, to: '/tools/germination' },
-      { title: 'Treatment Logs', desc: 'Fertigation doses and pest incidence', icon: Droplets, to: '/tools/treatments' },
+      { title: 'Treatment Logs', desc: 'Fertigation, pests and disease, seed pre-treatments', icon: FlaskConical, to: '/tools/treatments' },
+      { title: 'Irrigation Log', desc: 'Water applied by method and volume', icon: Droplets, to: '/tools/irrigation' },
       { title: 'Morphometrics', desc: 'Sturdiness, shoot : root, Dickson index', icon: Ruler, to: '/tools/morphometrics' },
       { title: 'Spatial Mapping', desc: 'Bench and position layouts per house', icon: Map, to: '/tools/spatial' },
     ]

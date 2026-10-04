@@ -2,38 +2,41 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Sparkles, X, Terminal, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { type ChatMessage } from '../../types';
-import { getNurseryContext } from '../../utils/chatContext';
-import { getMockResponse } from '../../utils/mockAi';
+import { AI_ENABLED, AI_MODEL, generateText } from '../../services/ai';
+import { buildNurseryContext, offlineAnswer, type NurserySnapshot } from '../../services/nurseryContext';
+import { useCollection } from '../../data/hooks';
 
-const BASE_SYSTEM_PROMPT = `You are AgroBot Intelligence, an elite PhD-level research assistant specialized in Forestry, Taxonomy, and Ecology.
+const BASE_SYSTEM_PROMPT = `You are AgroBot, a research assistant for forest nurseries: seed science, silviculture, greenhouse climate and experimental design.
+- Use the NURSERY RECORDS block for anything about this nursery. If a fact is not there, say it is not in the records; never invent batch numbers, counts or measurements.
+- For general science, give established knowledge and name the method or source type (e.g. ISTA rules, Tetens equation).
+- Decline questions unrelated to forestry, agronomy, ecology or nursery practice.
+- Be concise. Write binomial names in italics (*Genus species*) and give units.`;
 
-ANTI-HALLUCINATION RULES:
-1. ONLY answer queries based on the [STRICT REFERENCE DATA] provided or established scientific principles.
-2. If a query is unrelated to Forestry, Taxonomy, or Ecology, politely decline and explain why.
-3. If you do not have specific data (e.g., a batch number not listed), say "Data not available in current records."
-4. DO NOT invent statistics, batch numbers, or scientific names.
-
-REASONING FRAMEWORK:
-- Step 1: Identify "Key Data Points" from the user query.
-- Step 2: Cross-reference with the [STRICT REFERENCE DATA] provided below.
-- Step 3: Apply PhD-level scientific analysis (e.g., silviculture systems, ISTA standards, psychrometrics).
-- Step 4: Provide a professional, concise response using binomial nomenclature in italics.
-
-SCIENTIFIC DOMAINS:
-- Silviculture, Seed Physiology, Greenhouse Engineering, Experimental Design (RCBD), Biodiversity Indices.`;
-
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const HAS_LIVE_MODEL = Boolean(GEMINI_KEY) && GEMINI_KEY !== 'your_api_key';
+const HAS_LIVE_MODEL = AI_ENABLED;
 
 const STARTERS = [
-  "Analyze moisture level of SL-001",
-  "Report on batch NB-2024-001 status",
-  "Optimal VPD for greenhouse GHG-01",
-  "Taxonomy of Cedrus deodara",
+  "Report on batch NB-2024-001",
+  "Seed lot SL-001",
+  "What VPD suits seedlings?",
+  "Explain mean germination time",
   "Explain RCBD for nursery trials",
 ];
 
+// Model and record text are escaped before the small markdown subset is applied,
+// so nothing in a reply can inject markup into the page.
+const escapeHtml = (t: string) =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const AgroBotPage = () => {
+  const snapshot: NurserySnapshot = {
+    batches: useCollection('batches').items,
+    species: useCollection('species').items,
+    seedLots: useCollection('seedLots').items,
+    germination: useCollection('germinationCounts').items,
+    growth: useCollection('growthMeasurements').items,
+    climate: useCollection('climateReadings').items,
+    mortality: useCollection('mortalityEvents').items,
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,37 +74,17 @@ const AgroBotPage = () => {
     setMessages(newMessages);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-      if (!apiKey || apiKey === 'your_api_key' || apiKey === '') {
-        setTimeout(() => {
-          const reply = getMockResponse(text);
-          setMessages([...newMessages, { role: 'assistant', content: reply }]);
-          setIsLoading(false);
-        }, 800);
-        return;
+      let reply: string;
+      if (!HAS_LIVE_MODEL) {
+        await new Promise(r => setTimeout(r, 300));
+        reply = offlineAnswer(text, snapshot);
+      } else {
+        const history = messages.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
+        reply = await generateText(
+          `${buildNurseryContext(snapshot)}\n\n${history ? `CONVERSATION SO FAR\n${history}\n\n` : ''}QUESTION: ${text}`,
+          { system: BASE_SYSTEM_PROMPT },
+        );
       }
-
-      const context = getNurseryContext();
-      const fullSystemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${context}`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `INSTRUCTIONS: ${fullSystemPrompt}\n\nUSER QUESTION: ${text}` }]
-          }]
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
       setMessages([...newMessages, { role: 'assistant', content: reply }]);
     } catch (err: unknown) {
       setError(err instanceof Error && err.message ? err.message : 'Connection error. Please try again.');
@@ -112,7 +95,7 @@ const AgroBotPage = () => {
   };
 
   const parseMarkdown = (text: string) => {
-    const parsed = text
+    const parsed = escapeHtml(text)
       .replace(/^#{1,6}\s+(.+)$/gm, '<strong class="block text-sm font-semibold text-gray-900 mb-1">$1</strong>')
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-green-900">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em class="italic text-green-700 font-medium">$1</em>')
@@ -163,7 +146,7 @@ const AgroBotPage = () => {
                 </p>
 
                 <div className="w-full space-y-2">
-                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Try asking</p>
+                  <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Try asking</p>
                   {STARTERS.map((s, i) => (
                     <motion.button
                       key={i}
@@ -257,9 +240,9 @@ const AgroBotPage = () => {
             </motion.button>
           </div>
           <div className="flex justify-between items-center mt-3 px-1">
-            <div className="flex items-center gap-1.5 text-gray-400">
+            <div className="flex items-center gap-1.5 text-gray-500">
               <Terminal className="w-3 h-3" />
-              <span className="text-[10px] font-mono-sci">{HAS_LIVE_MODEL ? 'gemini-1.5-flash' : 'offline'}</span>
+              <span className="text-[10px] font-mono-sci">{HAS_LIVE_MODEL ? AI_MODEL : 'offline'}</span>
             </div>
             <p className="text-[10px] text-gray-500">Check advice against your own trial data.</p>
           </div>
