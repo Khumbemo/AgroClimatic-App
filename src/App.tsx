@@ -108,7 +108,8 @@ const Router = import.meta.env.VITE_MEMORY_ROUTER === 'true' ? MemoryRouter : Br
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router>
+      {/* basename lets the app run from a sub-path, e.g. GitHub Pages at /AgroClimatic-App/ */}
+      <Router basename={import.meta.env.BASE_URL}>
         <AppRoutes />
       </Router>
     </AuthProvider>

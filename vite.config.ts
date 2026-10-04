@@ -14,6 +14,8 @@ const vendorGroups = [
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  // Public path; the GitHub Pages workflow sets BASE_PATH=/AgroClimatic-App/
+  base: process.env.BASE_PATH || '/',
   build:
     mode === 'artifact'
       ? {
