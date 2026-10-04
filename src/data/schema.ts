@@ -285,6 +285,16 @@ export const experimentSchema = z.object({
   layoutVersion: z.number().int().optional(),
 });
 
+/** A measured response (e.g. height at 90 days) for every plot of an experiment. */
+export const trialVariableSchema = z.object({
+  ...base,
+  experimentId: z.string().min(1),
+  name: requiredText('Variable name', 80),
+  unit: text(40),
+  /** Plot number → measured value; plots without a value are omitted. */
+  values: z.record(z.string().regex(/^\d+$/), num('Value', -1e12, 1e12)),
+});
+
 export const PLACEMENT_STATUSES = ['sown', 'germinating', 'growing', 'hardening', 'ready'] as const;
 
 export const greenhouseSchema = z.object({
@@ -324,6 +334,7 @@ export const schemas = {
   provenanceRecords: provenanceRecordSchema,
   calibrations: calibrationSchema,
   experiments: experimentSchema,
+  trialVariables: trialVariableSchema,
   greenhouses: greenhouseSchema,
 } as const;
 
@@ -350,4 +361,5 @@ export type SubstrateMix = Entity<'substrateMixes'>;
 export type ProvenanceRecord = Entity<'provenanceRecords'>;
 export type Calibration = Entity<'calibrations'>;
 export type Experiment = Entity<'experiments'>;
+export type TrialVariable = Entity<'trialVariables'>;
 export type Greenhouse = Entity<'greenhouses'>;
