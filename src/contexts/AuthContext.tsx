@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { type User, onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { getFirebaseAuth } from '../firebase/config';
+import { IS_DEMO } from '../config';
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +10,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const IS_DEMO = !import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key';
 const DEMO_USER = { uid: 'demo-user', email: 'demo@forestry.org', displayName: 'Nursery Manager' } as User;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (IS_DEMO) return;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(getFirebaseAuth(), (user) => {
       setUser(user);
       setLoading(false);
     });
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       return;
     }
-    await signOut(auth);
+    await signOut(getFirebaseAuth());
   };
 
   return (

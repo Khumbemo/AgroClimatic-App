@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight, TreePine } from 'lucide-react';
+import { useCollection } from '../../data/hooks';
+import type { Species } from '../../data/schema';
 
-type Storage = 'Orthodox' | 'Sub-orthodox' | 'Recalcitrant';
-
-const species: { id: string; name: string; common: string; family: string; storage: Storage }[] = [
-  { id: '1', name: 'Pinus roxburghii', common: 'Chir pine', family: 'Pinaceae', storage: 'Orthodox' },
-  // Short-lived at ambient, but stores >650 days at 10 % moisture and −5 °C (sub-orthodox)
-  { id: '2', name: 'Cedrus deodara', common: 'Deodar cedar', family: 'Pinaceae', storage: 'Sub-orthodox' },
-  { id: '3', name: 'Abies pindrow', common: 'Pindrow fir', family: 'Pinaceae', storage: 'Orthodox' },
-];
-
-const storageChip: Record<Storage, string> = {
-  Orthodox: 'text-green-800 bg-green-50 border-green-200',
-  'Sub-orthodox': 'text-amber-800 bg-amber-50 border-amber-200',
-  Recalcitrant: 'text-red-700 bg-red-50 border-red-200',
+const storageChip: Record<Species['storageBehaviour'], string> = {
+  orthodox: 'text-green-800 bg-green-50 border-green-200',
+  'sub-orthodox': 'text-amber-800 bg-amber-50 border-amber-200',
+  intermediate: 'text-amber-800 bg-amber-50 border-amber-200',
+  recalcitrant: 'text-red-700 bg-red-50 border-red-200',
+  unknown: 'text-gray-600 bg-gray-100 border-gray-200',
 };
 
 const SpeciesDBPage: React.FC = () => {
+  const { items, ready } = useCollection('species');
+  const species = [...items].sort((a, b) => a.botanicalName.localeCompare(b.botanicalName));
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
-  const shown = species.filter(sp => !q || [sp.name, sp.common, sp.family].some(v => v.toLowerCase().includes(q)));
+  const shown = species.filter(sp => !q || [sp.botanicalName, sp.commonName, sp.family].some(v => v.toLowerCase().includes(q)));
 
   return (
     <div className="space-y-5 pb-8 animate-page-in">
@@ -48,14 +45,14 @@ const SpeciesDBPage: React.FC = () => {
               <TreePine className="w-[18px] h-[18px] text-green-700" strokeWidth={1.8} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-medium text-gray-900 italic">{sp.name}</h3>
-              <p className="text-xs text-gray-500">{sp.common} · {sp.family}</p>
+              <h3 className="text-[15px] font-medium text-gray-900 italic">{sp.botanicalName}</h3>
+              <p className="text-xs text-gray-500">{sp.commonName || '—'} · {sp.family || '—'}</p>
             </div>
-            <span className={`text-[11px] font-medium px-2 py-0.5 rounded border shrink-0 ${storageChip[sp.storage]}`}>{sp.storage}</span>
+            <span title={sp.notes} className={`text-[11px] font-medium px-2 py-0.5 rounded border shrink-0 capitalize ${storageChip[sp.storageBehaviour]}`}>{sp.storageBehaviour}</span>
             <ChevronRight className="w-4 h-4 text-gray-300" />
           </div>
         ))}
-        {shown.length === 0 && <p className="px-4 py-6 text-sm text-gray-500 text-center">No species match “{query}”.</p>}
+        {ready && shown.length === 0 && <p className="px-4 py-6 text-sm text-gray-500 text-center">No species match “{query}”.</p>}
       </div>
     </div>
   );

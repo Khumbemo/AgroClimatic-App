@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, ShieldCheck, Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
 
-interface CalibrationLog {
-  id:string; instrumentName:string; instrumentType:string; calibrationDate:string; nextDueDate:string;
-  standardUsed:string; calibratedBy:string; notes:string; createdAt:string;
-}
+import { useCollection, useData } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import FormError from '../../components/data/FormError';
 
 const AuditPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<CalibrationLog[]>(() => loadJSON('ac_calibration', []));
+  const { repo } = useData();
+  const logs = [...useCollection('calibrations').items].sort((a, b) => b.calibrationDate.localeCompare(a.calibrationDate));
+  const [error, setError] = useState<string | null>(null);
   // Reference time for due-date status, fixed when the page opens
   const [now] = useState(() => Date.now());
   const [showForm, setShowForm] = useState(false);
@@ -19,14 +19,16 @@ const AuditPage = () => {
   const instrumentTypes = ['pH Meter','EC Meter','SPAD Meter','PAR Sensor','Thermometer','Hygrometer','Balance/Scale','Digital Calipers','Other'];
 
 
-  const save = () => {
-    if(!form.instrumentName||!form.calibrationDate) return;
-    const log:CalibrationLog = {id:`CAL-${Date.now()}`,instrumentName:form.instrumentName,instrumentType:form.instrumentType,calibrationDate:form.calibrationDate,nextDueDate:form.nextDueDate,standardUsed:form.standardUsed,calibratedBy:form.calibratedBy,notes:form.notes,createdAt:new Date().toISOString()};
-    const u=[log,...logs];setLogs(u);localStorage.setItem('ac_calibration',JSON.stringify(u));
+  const save = async () => {
+    if(!form.instrumentName||!form.calibrationDate) { setError('Enter the instrument and calibration date.'); return; }
+    try {
+      await repo.add('calibrations', { ...form, nextDueDate: form.nextDueDate || null });
+    } catch (e) { setError(saveErrorMessage(e)); return; }
+    setError(null);
     setShowForm(false);setForm({instrumentName:'',instrumentType:'pH Meter',calibrationDate:new Date().toISOString().split('T')[0],nextDueDate:'',standardUsed:'',calibratedBy:'',notes:''});
   };
 
-  const getStatus = (nextDue:string):{label:string;color:string;icon:React.ReactNode} => {
+  const getStatus = (nextDue:string|null):{label:string;color:string;icon:React.ReactNode} => {
     if(!nextDue) return {label:'NO DATE',color:'text-gray-400 bg-gray-50 border-gray-200',icon:<AlertTriangle className="w-3 h-3"/>};
     const diff = Math.ceil((new Date(nextDue).getTime()-now)/86400000);
     if(diff<0) return {label:'OVERDUE',color:'text-red-600 bg-red-50 border-red-200',icon:<AlertTriangle className="w-3 h-3"/>};
@@ -55,7 +57,7 @@ const AuditPage = () => {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">New Calibration Entry</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
+            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">New Calibration Entry</h2><button onClick={()=>{setShowForm(false);setError(null);}} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
             <div className="space-y-4">
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Instrument Name / Serial</label><input type="text" placeholder="Hanna HI98130 #SN-4521" value={form.instrumentName} onChange={e=>setForm({...form,instrumentName:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Instrument Type</label>
@@ -66,6 +68,7 @@ const AuditPage = () => {
               </div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Standard Used</label><input type="text" placeholder="pH 4.01, 7.01, 10.01 buffer" value={form.standardUsed} onChange={e=>setForm({...form,standardUsed:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Calibrated By</label><input type="text" placeholder="Dr. J. Smith" value={form.calibratedBy} onChange={e=>setForm({...form,calibratedBy:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
+              <FormError message={error} />
               <button onClick={save} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Record Calibration</button>
             </div>
           </div>
@@ -77,14 +80,14 @@ const AuditPage = () => {
       ) : (
         <div className="space-y-3">{logs.map(l=>{const st=getStatus(l.nextDueDate);return(
           <div key={l.id} className="bento-card p-4 border border-gray-200">
-            <div className="flex justify-between items-center mb-2"><span className="font-mono-sci text-[10px] font-bold text-blue-600">{l.id}</span><span className={`text-[9px] font-mono-sci font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${st.color}`}>{st.icon}{st.label}</span></div>
+            <div className="flex justify-between items-center mb-2"><span className="text-xs font-medium text-gray-700">{l.instrumentType}</span><span className={`text-[9px] font-mono-sci font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${st.color}`}>{st.icon}{st.label}</span></div>
             <div className="flex items-center gap-2 mb-2"><Wrench className="w-4 h-4 text-gray-400"/><div><p className="font-bold text-sm text-gray-800">{l.instrumentName}</p><p className="text-[10px] text-gray-500">{l.instrumentType}</p></div></div>
             <div className="grid grid-cols-2 gap-2 text-center mt-2">
               <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.calibrationDate}</div><div className="text-[8px] text-gray-400">Calibrated</div></div>
               <div className="bg-gray-50 rounded-lg p-2"><div className="font-mono-sci text-xs font-bold">{l.nextDueDate||'—'}</div><div className="text-[8px] text-gray-400">Next Due</div></div>
             </div>
             {l.standardUsed&&<p className="text-[9px] text-gray-500 font-mono-sci mt-2">Std: {l.standardUsed}</p>}
-            <div className="text-[8px] text-gray-400 font-mono-sci mt-2 border-t border-gray-100 pt-2">{l.calibratedBy} · {l.createdAt}</div>
+            <div className="text-[8px] text-gray-400 font-mono-sci mt-2 border-t border-gray-100 pt-2">{l.calibratedBy || 'Calibrated by: not recorded'}</div>
           </div>
         );})}</div>
       )}

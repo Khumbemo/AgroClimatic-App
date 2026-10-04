@@ -1,4 +1,6 @@
-import type { GerminationLog } from '../types';
+import type { GerminationCount } from '../data/schema';
+
+type GerminationLog = Pick<GerminationCount, 'date' | 'count'>;
 
 export const calculateMGT = (logs: GerminationLog[], sowingDate: string): number => {
   const start = new Date(sowingDate).getTime();

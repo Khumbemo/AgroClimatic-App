@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, ThermometerSun, Droplets, Sun, Wind, X } from 'lucide-react';
-import type { ClimateLog } from '../../types';
+import { useCollection, useData, byDateDesc } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import FormError from '../../components/data/FormError';
 
 const EnvironmentalLogsPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<ClimateLog[]>(() => loadJSON('ac_climate_logs', []));
+  const { repo } = useData();
+  const { items } = useCollection('climateReadings');
+  const logs = [...items].sort(byDateDesc);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -20,10 +24,12 @@ const EnvironmentalLogsPage = () => {
   });
 
 
-  const saveLog = () => {
-    if (!form.tempMin || !form.tempMax || !form.humidity) return;
-    const newLog: ClimateLog = {
-      id: `CL-${Date.now()}`,
+  const saveLog = async () => {
+    if (!form.tempMin || !form.tempMax || !form.humidity) {
+      setError('Enter the minimum and maximum temperature and the relative humidity.');
+      return;
+    }
+    const newLog = {
       date: form.date,
       tempMin: parseFloat(form.tempMin),
       tempMax: parseFloat(form.tempMax),
@@ -33,9 +39,13 @@ const EnvironmentalLogsPage = () => {
       photoperiod: parseFloat(form.photoperiod) || 0,
       co2: form.co2 ? parseFloat(form.co2) : undefined,
     };
-    const updated = [newLog, ...logs];
-    setLogs(updated);
-    localStorage.setItem('ac_climate_logs', JSON.stringify(updated));
+    try {
+      await repo.add('climateReadings', newLog);
+    } catch (e) {
+      setError(saveErrorMessage(e));
+      return;
+    }
+    setError(null);
     setShowForm(false);
     setForm({ date: new Date().toISOString().split('T')[0], tempMin: '', tempMax: '', tempMean: '', humidity: '', lightIntensity: '', photoperiod: '', co2: '' });
   };
@@ -68,7 +78,7 @@ const EnvironmentalLogsPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">New Climate Entry</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => { setShowForm(false); setError(null); }} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
               <div>
@@ -109,6 +119,7 @@ const EnvironmentalLogsPage = () => {
                   <input type="number" step="1" placeholder="420" value={form.co2} onChange={e => setForm({...form, co2: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent outline-none" />
                 </div>
               </div>
+              <FormError message={error} />
               <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm  hover:shadow-sm transition-all">
                 Record Entry
               </button>
@@ -129,7 +140,7 @@ const EnvironmentalLogsPage = () => {
           {logs.map(log => (
             <div key={log.id} className="bento-card p-4 border border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-mono-sci text-[10px] font-bold text-amber-600">{log.id}</span>
+                <span className="text-xs font-medium text-gray-700">Climate reading</span>
                 <span className="font-mono-sci text-[10px] text-gray-400">{log.date}</span>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">

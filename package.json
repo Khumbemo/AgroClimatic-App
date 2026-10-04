@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:artifact": "tsc -b && vite build --mode artifact --base ./ --outDir dist-artifact && node scripts/inline-artifact.mjs"
+    "build:artifact": "tsc -b && vite build --mode artifact --base ./ --outDir dist-artifact && node scripts/inline-artifact.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.1",
@@ -27,7 +28,8 @@
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
-    "tailwind-merge": "^2.2.1"
+    "tailwind-merge": "^2.2.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -44,6 +46,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.4.2",
     "typescript-eslint": "^8.57.0",
-    "vite": "^5.2.2"
+    "vite": "^5.2.2",
+    "vitest": "^3.2.7"
   }
 }

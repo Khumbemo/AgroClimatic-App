@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Ruler, X } from 'lucide-react';
-import type { GrowthLog } from '../../types';
+import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import FormError from '../../components/data/FormError';
+import BatchSelect from '../../components/data/BatchSelect';
 
 const MorphometricsPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<GrowthLog[]>(() => loadJSON('ac_morpho_logs', []));
+  const { repo } = useData();
+  const { label } = useBatchIndex();
+  const { items } = useCollection('growthMeasurements');
+  const logs = [...items].sort(byDateDesc);
+  const [error, setError] = useState<string | null>(null);
+  const [batchId, setBatchId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    batchId: 'BATCH-001',
     sampleSize: '30',
     avgHeightCm: '',
     avgRCDmm: '',
@@ -24,23 +30,32 @@ const MorphometricsPage = () => {
   });
 
 
-  const saveLog = () => {
-    if (!form.avgHeightCm || !form.avgRCDmm) return;
-    const newLog: GrowthLog = {
-      id: `ML-${Date.now()}`,
-      batchId: form.batchId,
+  const optional = (v: string) => (v === '' ? undefined : parseFloat(v));
+
+  const saveLog = async () => {
+    if (!batchId) { setError('Select the batch you measured.'); return; }
+    if (!form.avgHeightCm || !form.avgRCDmm) { setError('Enter mean height and root-collar diameter.'); return; }
+    const newLog = {
+      batchId,
       date: form.date,
       sampleSize: parseInt(form.sampleSize) || 30,
       avgHeightCm: parseFloat(form.avgHeightCm),
       avgRCDmm: parseFloat(form.avgRCDmm),
       avgLeaves: parseFloat(form.avgLeaves) || 0,
       leafAreaIndex: form.leafAreaIndex ? parseFloat(form.leafAreaIndex) : undefined,
-      shootDryWeight: form.shootDryWeight ? parseFloat(form.shootDryWeight) : undefined,
-      rootDryWeight: form.rootDryWeight ? parseFloat(form.rootDryWeight) : undefined,
+      spadValue: optional(form.spadValue),
+      shootFreshWeight: optional(form.shootFreshWeight),
+      rootFreshWeight: optional(form.rootFreshWeight),
+      shootDryWeight: optional(form.shootDryWeight),
+      rootDryWeight: optional(form.rootDryWeight),
     };
-    const updated = [newLog, ...logs];
-    setLogs(updated);
-    localStorage.setItem('ac_morpho_logs', JSON.stringify(updated));
+    try {
+      await repo.add('growthMeasurements', newLog);
+    } catch (e) {
+      setError(saveErrorMessage(e));
+      return;
+    }
+    setError(null);
     setShowForm(false);
     setForm({ ...form, avgHeightCm: '', avgRCDmm: '', avgLeaves: '', leafAreaIndex: '', spadValue: '', shootFreshWeight: '', rootFreshWeight: '', shootDryWeight: '', rootDryWeight: '' });
   };
@@ -95,9 +110,13 @@ const MorphometricsPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">New Measurement</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => { setShowForm(false); setError(null); }} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
+              <div>
+                <label htmlFor="morph-batch" className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch</label>
+                <BatchSelect id="morph-batch" value={batchId} onChange={setBatchId} />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Date</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
                 <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Sample (n)</label><input type="number" value={form.sampleSize} onChange={e => setForm({...form, sampleSize: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
@@ -120,6 +139,7 @@ const MorphometricsPage = () => {
                   <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Root DW (g)</label><input type="number" step="0.01" placeholder="1.80" value={form.rootDryWeight} onChange={e => setForm({...form, rootDryWeight: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 outline-none" /></div>
                 </div>
               </div>
+              <FormError message={error} />
               <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Record Measurement</button>
             </div>
           </div>
@@ -138,7 +158,7 @@ const MorphometricsPage = () => {
           {logs.map(log => (
             <div key={log.id} className="bento-card p-4 border border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-mono-sci text-[10px] font-bold text-green-600">{log.id}</span>
+                <span className="text-xs font-medium text-gray-700">{label(log.batchId, log.legacyBatchLabel)}</span>
                 <span className="font-mono-sci text-[10px] text-gray-400">{log.date} · n={log.sampleSize}</span>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">

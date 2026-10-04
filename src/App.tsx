@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
+import { DataProvider } from './data/DataProvider';
 import LoginPage from './pages/LoginPage';
 import { App as CapApp } from '@capacitor/app';
 
@@ -74,7 +75,7 @@ const AppRoutes = () => {
       <BackButtonHandler />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        <Route path="/" element={<ProtectedRoute><DataProvider><MainLayout /></DataProvider></ProtectedRoute>}>
           <Route index element={<HomePage />} />
           <Route path="tools" element={<ToolsPage />} />
           <Route path="tools/environmental" element={<EnvironmentalLogsPage />} />
@@ -93,6 +94,7 @@ const AppRoutes = () => {
           <Route path="nursery" element={<BatchListPage />} />
           <Route path="nursery/new" element={<NewBatchPage />} />
           <Route path="nursery/batch/:id" element={<BatchDetailPage />} />
+          <Route path="nursery/batch/:id/edit" element={<NewBatchPage />} />
           <Route path="records" element={<RecordsPage />} />
           <Route path="records/seeds" element={<SeedLotsPage />} />
           <Route path="species" element={<SpeciesDBPage />} />

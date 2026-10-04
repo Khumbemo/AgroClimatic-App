@@ -1,36 +1,54 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, Skull, TrendingDown } from 'lucide-react';
 
 const CAUSE_CODES = ['Damping-off (Pythium)','Desiccation','Chlorosis','Mechanical Damage','Failed to Emerge','Herbivory','Root Rot (Fusarium)','Nutrient Toxicity','Unknown'] as const;
 
-interface MortalityEvent {
-  id:string; date:string; batchId:string; sowingDate:string; count:number;
-  causeCode:string; daysToDeath:number; notes:string;
-  createdAt:string; createdBy:string;
-}
+import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import FormError from '../../components/data/FormError';
+import BatchSelect from '../../components/data/BatchSelect';
 
 const MortalityPage = () => {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<MortalityEvent[]>(() => loadJSON('ac_mortality', []));
+  const { repo } = useData();
+  const { batches } = useBatchIndex();
+  const { items: allEvents } = useCollection('mortalityEvents');
   const [showForm, setShowForm] = useState(false);
-  const [totalSeeds, setTotalSeeds] = useState<number>(()=>{const s=localStorage.getItem('ac_mort_total');return s?parseInt(s):100;});
-  const [form, setForm] = useState({date:new Date().toISOString().split('T')[0],batchId:'BATCH-001',sowingDate:'',count:'',causeCode:CAUSE_CODES[0] as string,notes:''});
+  const [error, setError] = useState<string | null>(null);
+  const [chosenBatchId, setChosenBatchId] = useState<string | null>(null);
+  const [seedsInput, setSeedsInput] = useState('');
+  const [form, setForm] = useState({date:new Date().toISOString().split('T')[0],sowingDate:'',count:'',causeCode:CAUSE_CODES[0] as string,notes:''});
 
+  const latestEventBatch = [...allEvents].sort(byDateDesc)[0]?.batchId ?? null;
+  const batchId = chosenBatchId ?? latestEventBatch ?? batches[0]?.id ?? null;
+  const batch = batchId ? batches.find(b => b.id === batchId) : undefined;
+  const events = allEvents.filter(e => e.batchId === batchId).sort(byDateDesc);
+  const totalSeeds = batch?.seedsSown ?? 0;
 
-  const updateTotal=(v:number)=>{setTotalSeeds(v);localStorage.setItem('ac_mort_total',v.toString());};
+  const saveSeedsSown = async () => {
+    if (!batch) return;
+    try { await repo.update('batches', batch.id, { seedsSown: Number(seedsInput) }); setSeedsInput(''); setError(null); }
+    catch (e) { setError(saveErrorMessage(e)); }
+  };
 
-  const save = () => {
-    if(!form.count||!form.sowingDate) return;
-    const dtd = Math.max(1,Math.ceil((new Date(form.date).getTime()-new Date(form.sowingDate).getTime())/86400000));
-    const ev:MortalityEvent = {id:`MRT-${Date.now()}`,date:form.date,batchId:form.batchId,sowingDate:form.sowingDate,count:parseInt(form.count),causeCode:form.causeCode,daysToDeath:dtd,notes:form.notes,createdAt:new Date().toISOString(),createdBy:'Nursery Manager'};
-    const u=[ev,...events];setEvents(u);localStorage.setItem('ac_mortality',JSON.stringify(u));
+  const save = async () => {
+    if (!batch) { setError('Select a batch first.'); return; }
+    if (!form.count) { setError('Enter the number of dead seedlings.'); return; }
+    // The batch's sowing date is the reference; the form field is only asked for when the batch lacks one.
+    const sowingDate = batch.sowingDate ?? (form.sowingDate || null);
+    if (!sowingDate) { setError('Enter the sowing date so days to death can be calculated.'); return; }
+    const dtd = Math.max(1,Math.ceil((new Date(form.date).getTime()-new Date(sowingDate).getTime())/86400000));
+    try {
+      if (!batch.sowingDate) await repo.update('batches', batch.id, { sowingDate });
+      await repo.add('mortalityEvents', { batchId: batch.id, date: form.date, sowingDate, count: parseInt(form.count), causeCode: form.causeCode, daysToDeath: dtd, notes: form.notes });
+    } catch (e) { setError(saveErrorMessage(e)); return; }
+    setError(null);
     setShowForm(false);setForm({...form,count:'',notes:''});
   };
 
   const totalDead = events.reduce((s,e)=>s+e.count,0);
-  const survivalRate = totalSeeds>0?((1-totalDead/totalSeeds)*100).toFixed(1):'100.0';
+  const survivalRate = totalSeeds>0?((1-totalDead/totalSeeds)*100).toFixed(1):'—';
   const causeSummary = events.reduce((acc,e)=>{acc[e.causeCode]=(acc[e.causeCode]||0)+e.count;return acc;},{} as Record<string,number>);
   const topCause = Object.entries(causeSummary).sort((a,b)=>b[1]-a[1])[0];
 
@@ -42,15 +60,33 @@ const MortalityPage = () => {
         <button onClick={()=>setShowForm(true)} className="bg-red-600 hover:bg-red-700 text-white p-2.5 rounded-xl shadow-sm  hover:scale-105 transition-transform"><Plus className="w-5 h-5"/></button>
       </div>
 
-      <div className="bento-card p-4 border border-gray-200">
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Initial Population (N₀)</label>
-        <input type="number" value={totalSeeds} onChange={e=>updateTotal(parseInt(e.target.value)||0)} className="w-full mt-1 p-2.5 rounded-lg border border-gray-200 font-mono-sci text-sm outline-none"/>
+      <div className="bento-card p-4 space-y-3">
+        <div>
+          <label htmlFor="mort-batch" className="sci-label">Batch</label>
+          <BatchSelect id="mort-batch" value={batchId} onChange={setChosenBatchId} />
+        </div>
+        {batch && (
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div><dt className="sci-label">Initial population (N₀)</dt><dd className="font-mono-sci text-gray-900 mt-0.5">{batch.seedsSown ?? '—'}</dd></div>
+            <div><dt className="sci-label">Sowing date</dt><dd className="font-mono-sci text-gray-900 mt-0.5">{batch.sowingDate ?? '—'}</dd></div>
+          </dl>
+        )}
+        {batch && batch.seedsSown == null && (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label htmlFor="mort-seeds" className="sci-label">Enter seeds sown for this batch</label>
+              <input id="mort-seeds" type="number" min="1" value={seedsInput} onChange={e => setSeedsInput(e.target.value)} className="w-full mt-1 p-2.5 rounded-lg border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-600" />
+            </div>
+            <button onClick={saveSeedsSown} disabled={!seedsInput} className="px-4 py-2.5 rounded-lg bg-green-700 text-white text-sm font-medium disabled:opacity-50">Save</button>
+          </div>
+        )}
+        {!showForm && <FormError message={error} />}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="bento-card p-4">
           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em]">Survival</span>
-          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{survivalRate}%</div>
+          <div className="font-mono-sci text-2xl font-bold text-green-700 mt-1">{survivalRate === '—' ? survivalRate : `${survivalRate}%`}</div>
           <div className="text-[8px] text-gray-400 font-mono-sci">(N₀−ΣD)/N₀</div>
         </div>
         <div className="bento-card p-4">
@@ -85,17 +121,18 @@ const MortalityPage = () => {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">Mortality Event</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
+            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">Mortality Event</h2><button onClick={()=>{setShowForm(false);setError(null);}} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Event Date</label><input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
-                <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Sowing Date</label><input type="date" value={form.sowingDate} onChange={e=>setForm({...form,sowingDate:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
+                {!batch?.sowingDate && <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Sowing Date</label><input type="date" value={form.sowingDate} onChange={e=>setForm({...form,sowingDate:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>}
               </div>
-              <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch ID</label><input type="text" value={form.batchId} onChange={e=>setForm({...form,batchId:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none"/></div>
+              <div><span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch</span><p className="mt-1 text-sm text-gray-900">{batch ? batch.batchNumber : 'No batch selected'}</p></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Dead Count</label><input type="number" placeholder="0" value={form.count} onChange={e=>setForm({...form,count:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-2xl font-bold text-center outline-none"/></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Diagnostic Cause Code</label>
                 <select value={form.causeCode} onChange={e=>setForm({...form,causeCode:e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none">{CAUSE_CODES.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Notes</label><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations..." className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm outline-none h-16 resize-none"/></div>
+              <FormError message={error} />
               <button onClick={save} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Record Event</button>
             </div>
           </div>
@@ -107,13 +144,12 @@ const MortalityPage = () => {
       ) : (
         <div className="space-y-3">{events.map(e=>(
           <div key={e.id} className="bento-card p-4 border border-gray-200">
-            <div className="flex justify-between items-center mb-2"><span className="font-mono-sci text-[10px] font-bold text-red-600">{e.id}</span><span className="font-mono-sci text-[10px] text-gray-400">{e.date}</span></div>
+            <div className="flex justify-between items-center mb-2"><span className="text-xs font-medium text-gray-700">{batch?.batchNumber}</span><span className="font-mono-sci text-[10px] text-gray-400">{e.date}</span></div>
             <div className="flex items-center gap-3 mb-2">
               <span className="font-mono-sci text-2xl font-bold text-red-700">-{e.count}</span>
-              <div className="flex-1"><p className="text-xs font-bold text-gray-800">{e.causeCode}</p><p className="text-[9px] text-gray-500 font-mono-sci">DTD: {e.daysToDeath}d from sowing</p></div>
+              <div className="flex-1"><p className="text-xs font-bold text-gray-800">{e.causeCode}</p><p className="text-[9px] text-gray-500 font-mono-sci">DTD: {e.daysToDeath ?? '—'} d from sowing</p></div>
             </div>
             {e.notes&&<p className="text-xs text-gray-500 mt-1">{e.notes}</p>}
-            <div className="text-[8px] text-gray-400 font-mono-sci mt-2 border-t border-gray-100 pt-2">{e.createdBy} · {e.createdAt}</div>
           </div>
         ))}</div>
       )}

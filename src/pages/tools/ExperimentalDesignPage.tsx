@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, FlaskConical, Shuffle, EyeOff, Sparkles, Loader2 } from 'lucide-react';
 import { aiService } from '../../services/ai';
 
-type DesignType = 'CRD' | 'RCBD' | 'Latin_Square' | 'Split_Plot';
-interface Experiment {
-  id: string; name: string; designType: DesignType; blocks: number; replicates: number;
-  treatments: string[]; assignments: { block: number; position: number; treatment: string; code: string }[];
-  blindMode: boolean; createdAt: string; createdBy: string;
-}
+import { useCollection, useData } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import type { Experiment } from '../../data/schema';
+import FormError from '../../components/data/FormError';
+
+type DesignType = Experiment['designType'];
 const designLabels: Record<DesignType, string> = { CRD:'Completely Randomized Design', RCBD:'Randomized Complete Block Design', Latin_Square:'Latin Square', Split_Plot:'Split-Plot Design' };
 
 const ExperimentalDesignPage = () => {
   const navigate = useNavigate();
-  const [experiments, setExperiments] = useState<Experiment[]>(() => loadJSON('ac_experiments', []));
+  const { repo } = useData();
+  const experiments = [...useCollection('experiments').items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name:'', designType:'RCBD' as DesignType, blocks:'3', replicates:'4', treatmentInput:'', treatments:[] as string[], blindMode:false });
   const [aiPrompt, setAiPrompt] = useState('');
@@ -43,16 +44,19 @@ const ExperimentalDesignPage = () => {
 
   const shuffle = <T,>(a:T[]):T[] => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
 
-  const saveExperiment = () => {
-    if(!form.name || form.treatments.length<2) return;
+  const saveExperiment = async () => {
+    if(!form.name) { setError('Enter an experiment name.'); return; }
+    if(form.treatments.length<2) { setError('Add at least two treatments.'); return; }
     const blocks = parseInt(form.blocks)||3;
     const assignments: Experiment['assignments'] = [];
     for(let b=0;b<blocks;b++){
       const sh = shuffle(form.treatments.map((t,i)=>({treatment:t, code:`TRT-${String.fromCharCode(65+i)}`})));
       sh.forEach((s,pos)=> assignments.push({block:b+1, position:pos+1, treatment:s.treatment, code:s.code}));
     }
-    const exp:Experiment = { id:`EXP-${Date.now()}`, name:form.name, designType:form.designType, blocks, replicates:parseInt(form.replicates)||4, treatments:form.treatments, assignments, blindMode:form.blindMode, createdAt:new Date().toISOString(), createdBy:'Nursery Manager' };
-    const updated = [exp,...experiments]; setExperiments(updated); localStorage.setItem('ac_experiments', JSON.stringify(updated));
+    try {
+      await repo.add('experiments', { name:form.name, designType:form.designType, blocks, replicates:parseInt(form.replicates)||4, treatments:form.treatments, assignments, blindMode:form.blindMode });
+    } catch (e) { setError(saveErrorMessage(e)); return; }
+    setError(null);
     setShowForm(false); setForm({name:'',designType:'RCBD',blocks:'3',replicates:'4',treatmentInput:'',treatments:[],blindMode:false});
   };
 
@@ -67,7 +71,7 @@ const ExperimentalDesignPage = () => {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
-            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">New Experiment</h2><button onClick={()=>setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
+            <div className="flex justify-between items-center mb-5"><h2 className="font-semibold text-lg">New Experiment</h2><button onClick={()=>{setShowForm(false);setError(null);}} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button></div>
             
             <div className="mb-5 bg-green-50 p-3 rounded-xl border border-green-100">
               <div className="flex items-center gap-2 mb-2 text-green-700 font-bold text-xs"><Sparkles className="w-4 h-4"/> AI Auto-Generate</div>
@@ -95,6 +99,7 @@ const ExperimentalDesignPage = () => {
                 <EyeOff className="w-5 h-5 text-gray-400"/><div className="flex-1"><p className="text-sm font-bold">Blind Testing Mode</p><p className="text-[10px] text-gray-500">Hide treatment names from collectors</p></div>
                 <button onClick={()=>setForm({...form,blindMode:!form.blindMode})} className={`w-12 h-6 rounded-full transition-colors ${form.blindMode?'bg-green-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.blindMode?'translate-x-6':'translate-x-0.5'}`}/></button>
               </div>
+              <FormError message={error} />
               <button onClick={saveExperiment} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm">Create & Randomize</button>
             </div>
           </div>
@@ -105,7 +110,7 @@ const ExperimentalDesignPage = () => {
         <div className="bento-card p-10 text-center border-2 border-dashed border-gray-200"><FlaskConical className="w-10 h-10 text-gray-300 mx-auto mb-3"/><p className="font-bold text-sm text-gray-500">No experiments configured.</p></div>
       ) : experiments.map(exp=>(
         <div key={exp.id} className="bento-card p-4 border border-gray-200 space-y-4">
-          <div><span className="font-mono-sci text-[10px] font-bold text-green-600">{exp.id}</span><h3 className="font-semibold text-lg text-gray-900 mt-1">{exp.name}</h3>
+          <div><h3 className="font-semibold text-lg text-gray-900">{exp.name}</h3>
             <div className="flex gap-2 mt-1"><span className="text-[9px] bg-green-50 text-green-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-green-100">{designLabels[exp.designType]}</span>{exp.blindMode && <span className="text-[9px] bg-amber-50 text-amber-600 font-mono-sci font-bold px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1"><EyeOff className="w-3 h-3"/> BLIND</span>}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -117,7 +122,7 @@ const ExperimentalDesignPage = () => {
             <table className="w-full text-[10px] font-mono-sci"><thead><tr className="border-b border-gray-200"><th className="py-1 px-2 text-left text-gray-400">Block</th><th className="py-1 px-2 text-left text-gray-400">Pos</th><th className="py-1 px-2 text-left text-gray-400">Code</th>{!exp.blindMode&&<th className="py-1 px-2 text-left text-gray-400">Treatment</th>}</tr></thead>
               <tbody>{exp.assignments.map((a,i)=>(<tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="py-1.5 px-2 font-bold">{a.block}</td><td className="py-1.5 px-2">{a.position}</td><td className="py-1.5 px-2 text-green-600 font-bold">{a.code}</td>{!exp.blindMode&&<td className="py-1.5 px-2 text-gray-600">{a.treatment}</td>}</tr>))}</tbody></table>
           </div>
-          <div className="text-[8px] text-gray-400 font-mono-sci border-t border-gray-100 pt-2">{exp.createdBy} · {exp.createdAt}</div>
+          <div className="text-[10px] text-gray-400 font-mono-sci border-t border-gray-100 pt-2">Created {exp.createdAt.slice(0, 10)}</div>
         </div>
       ))}
     </div>

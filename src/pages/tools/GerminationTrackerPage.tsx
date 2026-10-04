@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
-import { loadJSON } from '../../utils/storage';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Sprout, X, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
-import type { GerminationLog } from '../../types';
+import { useBatchIndex, useCollection, useData, byDateDesc } from '../../data/hooks';
+import { saveErrorMessage } from '../../data/errors';
+import FormError from '../../components/data/FormError';
+import BatchSelect from '../../components/data/BatchSelect';
 import { aiService } from '../../services/ai';
+
+const daysAfterSowing = (date: string, sowing: string) =>
+  Math.max(1, Math.ceil((new Date(date).getTime() - new Date(sowing).getTime()) / 86400000));
 
 const GerminationTrackerPage = () => {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<GerminationLog[]>(() => loadJSON('ac_germination_logs', []));
+  const { repo } = useData();
+  const { batches, label } = useBatchIndex();
+  const { items: allCounts } = useCollection('germinationCounts');
   const [showForm, setShowForm] = useState(false);
-  const [totalSeeds, setTotalSeeds] = useState<number>(() => {
-    const saved = localStorage.getItem('ac_germ_total_seeds');
-    return saved ? parseInt(saved) : 100;
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [chosenBatchId, setChosenBatchId] = useState<string | null>(null);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     count: '',
-    batchId: 'BATCH-001',
   });
+  const [seedsInput, setSeedsInput] = useState('');
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Default to the batch with the most recent count, else the newest batch.
+  const latestCounted = [...allCounts].sort(byDateDesc)[0]?.batchId ?? null;
+  const batchId = chosenBatchId ?? latestCounted ?? batches[0]?.id ?? null;
+  const batch = batchId ? batches.find(b => b.id === batchId) : undefined;
+  const logs = allCounts.filter(c => c.batchId === batchId).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  const totalSeeds = batch?.seedsSown ?? 0;
+  const sowingDate = batch?.sowingDate ?? null;
 
   const generateInsight = async () => {
     if (logs.length === 0) return;
@@ -30,45 +43,41 @@ const GerminationTrackerPage = () => {
     setIsAiLoading(false);
   };
 
-
-  const saveLog = () => {
-    if (!form.count) return;
-    const newLog: GerminationLog = {
-      id: `GL-${Date.now()}`,
-      batchId: form.batchId,
-      date: form.date,
-      count: parseInt(form.count),
-    };
-    const updated = [...logs, newLog].sort((a, b) => a.date.localeCompare(b.date));
-    setLogs(updated);
-    localStorage.setItem('ac_germination_logs', JSON.stringify(updated));
+  const saveLog = async () => {
+    if (!batchId) { setError('Select a batch first.'); return; }
+    if (form.count === '') { setError('Enter the number of newly germinated seeds.'); return; }
+    try {
+      await repo.add('germinationCounts', { batchId, date: form.date, count: Number(form.count) });
+    } catch (e) {
+      setError(saveErrorMessage(e));
+      return;
+    }
+    setError(null);
     setShowForm(false);
     setForm({ ...form, count: '' });
   };
 
-  const updateTotalSeeds = (val: number) => {
-    setTotalSeeds(val);
-    localStorage.setItem('ac_germ_total_seeds', val.toString());
+  const saveSeedsSown = async () => {
+    if (!batch) return;
+    try {
+      await repo.update('batches', batch.id, { seedsSown: Number(seedsInput) });
+      setSeedsInput('');
+      setError(null);
+    } catch (e) {
+      setError(saveErrorMessage(e));
+    }
   };
 
   // Scientific Germination Metrics
   const cumulativeCount = logs.reduce((sum, l) => sum + l.count, 0);
-  const germinationPercentage = totalSeeds > 0 ? ((cumulativeCount / totalSeeds) * 100).toFixed(1) : '0.0';
+  const germinationPercentage = totalSeeds > 0 ? ((cumulativeCount / totalSeeds) * 100).toFixed(1) : '—';
 
-  // GRI = Germination Rate Index = Σ(Gi/Ti) where Gi = seeds on day i, Ti = day number
-  const sowingDate = logs.length > 0 ? logs[0].date : null;
-  const gri = logs.reduce((sum, l) => {
-    if (!sowingDate) return 0;
-    const dayNum = Math.max(1, Math.ceil((new Date(l.date).getTime() - new Date(sowingDate).getTime()) / 86400000));
-    return sum + l.count / dayNum;
-  }, 0).toFixed(2);
-
-  // MGT = Mean Germination Time = Σ(Ti * Gi) / Σ(Gi)
-  const mgt = cumulativeCount > 0 ? (logs.reduce((sum, l) => {
-    if (!sowingDate) return 0;
-    const dayNum = Math.max(1, Math.ceil((new Date(l.date).getTime() - new Date(sowingDate).getTime()) / 86400000));
-    return sum + dayNum * l.count;
-  }, 0) / cumulativeCount).toFixed(1) : '—';
+  // Timing metrics count days from the batch's sowing date (tᵢ = days after sowing).
+  // GRI = Σ(Gᵢ/tᵢ); MGT = Σ(tᵢ·Gᵢ)/ΣGᵢ
+  const gri = sowingDate ? logs.reduce((sum, l) => sum + l.count / daysAfterSowing(l.date, sowingDate), 0).toFixed(2) : '—';
+  const mgt = sowingDate && cumulativeCount > 0
+    ? (logs.reduce((sum, l) => sum + daysAfterSowing(l.date, sowingDate) * l.count, 0) / cumulativeCount).toFixed(1)
+    : '—';
 
   return (
     <div className="space-y-6 pb-8">
@@ -86,10 +95,37 @@ const GerminationTrackerPage = () => {
         </button>
       </div>
 
-      {/* Seed Count Configuration */}
-      <div className="bento-card p-4 border border-gray-200">
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Total Seeds Sown (N₀)</label>
-        <input type="number" value={totalSeeds} onChange={e => updateTotalSeeds(parseInt(e.target.value) || 0)} className="w-full mt-1 p-2.5 rounded-lg border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none" />
+      {/* Batch: supplies N₀ (seeds sown) and the sowing date */}
+      <div className="bento-card p-4 space-y-3">
+        <div>
+          <label htmlFor="germ-batch" className="sci-label">Batch</label>
+          <BatchSelect id="germ-batch" value={batchId} onChange={id => { setChosenBatchId(id); setAiInsight(null); }} />
+        </div>
+        {batch && (
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt className="sci-label">Seeds sown (N₀)</dt>
+              <dd className="font-mono-sci text-gray-900 mt-0.5">{batch.seedsSown ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="sci-label">Sowing date</dt>
+              <dd className="font-mono-sci text-gray-900 mt-0.5">{batch.sowingDate ?? '—'}</dd>
+            </div>
+          </dl>
+        )}
+        {batch && batch.seedsSown == null && (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label htmlFor="germ-seeds" className="sci-label">Enter seeds sown for this batch</label>
+              <input id="germ-seeds" type="number" min="1" value={seedsInput} onChange={e => setSeedsInput(e.target.value)} className="w-full mt-1 p-2.5 rounded-lg border border-gray-200 font-mono-sci text-sm outline-none focus:border-green-600" />
+            </div>
+            <button onClick={saveSeedsSown} disabled={!seedsInput} className="px-4 py-2.5 rounded-lg bg-green-700 text-white text-sm font-medium disabled:opacity-50">Save</button>
+          </div>
+        )}
+        {batch && !batch.sowingDate && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">This batch has no sowing date, so germination speed and mean germination time can't be calculated. Add it on the batch record.</p>
+        )}
+        {!showForm && <FormError message={error} />}
       </div>
 
       {/* Precision Metrics Dashboard */}
@@ -140,7 +176,7 @@ const GerminationTrackerPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">New Germination Count</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => { setShowForm(false); setError(null); }} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="space-y-4">
               <div>
@@ -148,13 +184,14 @@ const GerminationTrackerPage = () => {
                 <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch ID</label>
-                <input type="text" value={form.batchId} onChange={e => setForm({...form, batchId: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none" />
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Batch</span>
+                <p className="mt-1 text-sm text-gray-900">{batchId ? label(batchId) : 'No batch selected'}</p>
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">New Emerged Seedlings (Gᵢ)</label>
                 <input type="number" placeholder="0" value={form.count} onChange={e => setForm({...form, count: e.target.value})} className="w-full mt-1 p-3 rounded-xl border border-gray-200 font-mono-sci text-2xl font-bold text-center focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none" />
               </div>
+              <FormError message={error} />
               <button onClick={saveLog} className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold text-sm uppercase tracking-widest shadow-sm  hover:shadow-sm transition-all">
                 Record Count
               </button>
@@ -178,15 +215,15 @@ const GerminationTrackerPage = () => {
           <div className="space-y-2">
             {logs.map((log, idx) => {
               const cumulative = logs.slice(0, idx + 1).reduce((s, l) => s + l.count, 0);
-              const pct = totalSeeds > 0 ? ((cumulative / totalSeeds) * 100).toFixed(1) : '0.0';
+              const pct = totalSeeds > 0 ? ((cumulative / totalSeeds) * 100).toFixed(1) : '—';
               return (
                 <div key={log.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
                   <span className="font-mono-sci text-[10px] text-gray-400 w-20">{log.date}</span>
                   <span className="font-mono-sci text-xs font-bold text-green-700 w-12 text-center">+{log.count}</span>
                   <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div className="bg-green-600 h-full rounded-full transition-all" style={{ width: `${Math.min(100, parseFloat(pct))}%` }}></div>
+                    <div className="bg-green-600 h-full rounded-full transition-all" style={{ width: `${totalSeeds > 0 ? Math.min(100, (cumulative / totalSeeds) * 100) : 0}%` }}></div>
                   </div>
-                  <span className="font-mono-sci text-[10px] font-bold text-gray-600 w-14 text-right">{pct}%</span>
+                  <span className="font-mono-sci text-[10px] font-bold text-gray-600 w-14 text-right">{pct === '—' ? pct : `${pct}%`}</span>
                 </div>
               );
             })}

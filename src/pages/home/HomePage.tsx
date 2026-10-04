@@ -5,6 +5,7 @@ import { aiService } from '../../services/ai';
 import { calculateVPD, getVpdBand } from '../../utils/calculations';
 import VpdScale from '../../components/sci/VpdScale';
 import { vpdToneChip } from '../../components/sci/vpdTone';
+import MigrationNotice from '../../components/data/MigrationNotice';
 
 // Demo sensor snapshot; VPD is derived from it so the readings stay consistent.
 const CLIMATE = { temp: 24.6, rh: 68, par: 412, ec: 1.8, vpd: calculateVPD(24.6, 68) };
@@ -66,6 +67,7 @@ const HomePage = () => {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5 pb-8">
+      <MigrationNotice />
 
       {/* Greenhouse climate */}
       <motion.section variants={item} className="bento-card p-0 overflow-hidden">

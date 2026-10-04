@@ -3,9 +3,12 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
+  LineController,
   BarElement,
   LineElement,
   PointElement,
+  Filler,
   Title,
   Tooltip,
   Legend,
@@ -15,9 +18,14 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { paletteColor, chartChrome } from '../../utils/chartColors';
 
+// <Chart type="bar"> with a line dataset needs both controllers registered explicitly,
+// and Filler for the shaded cumulative curve.
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  BarController,
+  LineController,
+  Filler,
   BarElement,
   LineElement,
   PointElement,
