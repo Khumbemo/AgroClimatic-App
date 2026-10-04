@@ -12,6 +12,7 @@ import Sheet from '../../components/ui/Sheet';
 import FormError from '../../components/data/FormError';
 import { useRecordForm } from '../../components/ui/useRecordForm';
 import { saveErrorMessage } from '../../data/errors';
+import TrialResults from '../../components/trials/TrialResults';
 
 const DESIGNS = Object.entries(DESIGN_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -82,8 +83,10 @@ const ExperimentCard = ({ exp }: { exp: Experiment }) => {
   const [error, setError] = useState<string | null>(null);
   const legacy = exp.layoutVersion !== 2;
   const plots = exp.assignments.length;
+  const variables = useCollection('trialVariables').items.filter(v => v.experimentId === exp.id);
 
   const rerandomise = async () => {
+    if (variables.length) { setError('This experiment already has recorded results; re-randomising would detach them from their plots.'); return; }
     const seed = newSeed();
     // Pre-fix records kept the number of blocks in `blocks`; CRD used `replicates`.
     const replicates = exp.designType === 'Latin_Square' ? exp.treatments.length
@@ -146,15 +149,25 @@ const ExperimentCard = ({ exp }: { exp: Experiment }) => {
         )}
       </div>
 
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        {legacy
+          ? <p className="text-xs text-gray-600">Re-randomise this layout before recording results.</p>
+          : <TrialResults exp={exp} reveal={reveal} />}
+      </div>
+
       <p className="text-[11px] text-gray-500 font-mono-sci mt-3">
         Created {exp.createdAt.slice(0, 10)}{exp.seed != null ? ` · seed ${exp.seed}` : ''}
       </p>
       <FormError message={error} />
       {confirmDelete && (
         <div className="mt-3 flex items-center justify-end gap-2 bg-red-50 border border-red-200 rounded-md p-2">
-          <span className="text-xs text-red-800 mr-auto">Delete this experiment and its layout?</span>
+          <span className="text-xs text-red-800 mr-auto">Delete this experiment, its layout{variables.length ? ` and ${variables.length} recorded variable${variables.length === 1 ? '' : 's'}` : ''}?</span>
           <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-          <Button size="sm" variant="danger" onClick={() => repo.remove('experiments', exp.id)}>Delete</Button>
+          <Button size="sm" variant="danger" onClick={async () => {
+            // Results belong to the layout, so they are removed with it.
+            for (const v of variables) await repo.remove('trialVariables', v.id);
+            await repo.remove('experiments', exp.id);
+          }}>Delete</Button>
         </div>
       )}
     </Section>

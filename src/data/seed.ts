@@ -1,9 +1,10 @@
 import type { Repository } from './repository';
 import type { KeyValueStorage } from './localBackend';
-import type { Batch, ClimateReading, GerminationCount, GrowthMeasurement, SeedLot, Species } from './schema';
+import type { Batch, ClimateReading, Experiment, GerminationCount, GrowthMeasurement, SeedLot, Species, TrialVariable } from './schema';
+import { generateLayout, seededRandom } from '../utils/trialDesign';
 
-// v3: example observations added for the demo dashboard
-const seededKey = (scope: string) => `ac.v3.seeded.${scope}`;
+// v4: example trial with results added for the demo
+const seededKey = (scope: string) => `ac.v4.seeded.${scope}`;
 const T0 = '2024-01-01T00:00:00.000Z';
 
 /** Reference species list. Seed storage behaviour per published storage studies. */
@@ -56,6 +57,20 @@ const EXAMPLE_GROWTH: GrowthMeasurement[] = [
   { id: 'ex-gm-2', batchId: 'ex-nb-2024-001', date: '2024-05-20', sampleSize: 30, avgHeightCm: 7.9, avgRCDmm: 1.9, shootDryWeight: 0.62, rootDryWeight: 0.31, isExample: true, createdAt: T0, updatedAt: T0 },
 ];
 
+/** Example RCBD substrate trial with simulated heights, so the analysis can be explored in the demo. */
+function exampleTrial(): { experiment: Experiment; variable: TrialVariable } {
+  const treatments = ['Peat', 'Coco coir', 'Composted bark', 'Peat + perlite'];
+  const effect: Record<string, number> = { Peat: 0, 'Coco coir': 1.1, 'Composted bark': -1.6, 'Peat + perlite': 2.3 };
+  const seed = 2026;
+  const assignments = generateLayout({ designType: 'RCBD', treatments, replicates: 4, seed });
+  const noise = seededRandom(7);
+  const values = Object.fromEntries(assignments.map(a => [String(a.plot), +(14 + effect[a.treatment] + 0.5 * (a.block - 2.5) + (noise() - 0.5) * 1.6).toFixed(1)]));
+  return {
+    experiment: { id: 'ex-exp-1', name: 'Substrate trial (example)', designType: 'RCBD', treatments, replicates: 4, blocks: 4, assignments, blindMode: false, seed, layoutVersion: 2, isExample: true, createdAt: T0, updatedAt: T0 },
+    variable: { id: 'ex-tv-1', experimentId: 'ex-exp-1', name: 'Seedling height at 90 days', unit: 'cm', values, isExample: true, createdAt: T0, updatedAt: T0 },
+  };
+}
+
 /**
  * Add reference data once per scope. Example records are only added in demo mode and only
  * into an empty store, so real accounts never receive invented records.
@@ -79,6 +94,11 @@ export async function seedOnce(repo: Repository, storage: KeyValueStorage | null
     const exampleBatch = (await repo.list('batches')).some(b => b.id === 'ex-nb-2024-001');
     if (exampleBatch && !(await repo.list('germinationCounts')).some(c => c.batchId === 'ex-nb-2024-001')) for (const c of EXAMPLE_COUNTS) await repo.put('germinationCounts', c);
     if (exampleBatch && !(await repo.list('growthMeasurements')).some(g => g.batchId === 'ex-nb-2024-001')) for (const g of EXAMPLE_GROWTH) await repo.put('growthMeasurements', g);
+    if ((await repo.list('experiments')).length === 0) {
+      const { experiment, variable } = exampleTrial();
+      await repo.put('experiments', experiment);
+      await repo.put('trialVariables', variable);
+    }
   }
 
   try {
