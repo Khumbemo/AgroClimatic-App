@@ -10,19 +10,135 @@
   like graph paper; data is always set in mono with its unit.
 */
 @layer base {
+  /* Palette channels (R G B) consumed by tailwind.config.js. Dark mode swaps the values,
+     so every existing utility class themes itself without per-page dark: variants. */
   :root {
-    --ground: #f5f7f3;     /* gray-50  */
-    --panel: #ffffff;
-    --rule: #dce3d8;       /* gray-200 */
+    --white: 255 255 255;
+    --gray-50: 245 247 243;
+    --gray-100: 236 240 233;
+    --gray-200: 220 227 216;
+    --gray-300: 195 205 191;
+    --gray-400: 151 163 147;
+    --gray-500: 110 123 107;
+    --gray-600: 83 95 81;
+    --gray-700: 63 73 62;
+    --gray-800: 42 50 41;
+    --gray-900: 26 32 26;
+    --gray-950: 15 19 15;
+    --green-50: 239 246 236;
+    --green-100: 220 235 213;
+    --green-200: 187 216 174;
+    --green-300: 146 191 128;
+    --green-400: 106 164 87;
+    --green-500: 76 138 59;
+    --green-600: 59 113 46;
+    --green-700: 47 91 38;
+    --green-800: 38 74 32;
+    --green-900: 30 59 26;
+    --green-950: 16 34 14;
+    --blue-50: 238 245 248;
+    --blue-100: 215 232 239;
+    --blue-200: 176 209 223;
+    --blue-300: 128 179 202;
+    --blue-400: 82 147 176;
+    --blue-500: 56 120 148;
+    --blue-600: 44 96 121;
+    --blue-700: 37 78 98;
+    --blue-800: 31 63 79;
+    --blue-900: 26 51 65;
+    --blue-950: 15 32 42;
+    --amber-50: 255 251 235;
+    --amber-100: 254 243 199;
+    --amber-200: 253 230 138;
+    --amber-300: 252 211 77;
+    --amber-400: 251 191 36;
+    --amber-500: 245 158 11;
+    --amber-600: 217 119 6;
+    --amber-700: 180 83 9;
+    --amber-800: 146 64 14;
+    --amber-900: 120 53 15;
+    --amber-950: 69 26 3;
+    --red-50: 254 242 242;
+    --red-100: 254 226 226;
+    --red-200: 254 202 202;
+    --red-300: 252 165 165;
+    --red-400: 248 113 113;
+    --red-500: 239 68 68;
+    --red-600: 220 38 38;
+    --red-700: 185 28 28;
+    --red-800: 153 27 27;
+    --red-900: 127 29 29;
+    --red-950: 69 10 10;
+    --ground: 245 247 243;
     --grid: rgba(47, 91, 38, 0.05);
-    --ink: #1a201a;        /* gray-900 */
-    --leaf: #2f5b26;       /* green-700 */
     color-scheme: light;
+  }
+
+  .dark {
+    --white: 22 29 22;
+    --gray-50: 20 26 20;
+    --gray-100: 27 35 27;
+    --gray-200: 42 52 42;
+    --gray-300: 58 70 58;
+    --gray-400: 95 109 94;
+    --gray-500: 138 151 135;
+    --gray-600: 169 181 166;
+    --gray-700: 195 205 192;
+    --gray-800: 219 227 216;
+    --gray-900: 237 242 234;
+    --gray-950: 246 249 244;
+    --green-50: 21 35 21;
+    --green-100: 26 44 25;
+    --green-200: 36 64 31;
+    --green-300: 47 85 39;
+    --green-400: 63 111 51;
+    --green-500: 79 138 64;
+    --green-600: 106 164 87;
+    --green-700: 140 194 121;
+    --green-800: 176 216 160;
+    --green-900: 210 236 198;
+    --green-950: 233 246 226;
+    --blue-50: 16 32 42;
+    --blue-100: 20 42 55;
+    --blue-200: 28 59 77;
+    --blue-300: 40 80 102;
+    --blue-400: 58 106 133;
+    --blue-500: 80 137 166;
+    --blue-600: 111 166 194;
+    --blue-700: 147 192 214;
+    --blue-800: 184 215 230;
+    --blue-900: 216 234 242;
+    --blue-950: 236 245 249;
+    --amber-50: 38 28 8;
+    --amber-100: 51 37 10;
+    --amber-200: 74 53 13;
+    --amber-300: 107 76 16;
+    --amber-400: 168 116 19;
+    --amber-500: 217 151 26;
+    --amber-600: 240 178 58;
+    --amber-700: 247 201 106;
+    --amber-800: 250 220 154;
+    --amber-900: 253 236 200;
+    --amber-950: 254 246 228;
+    --red-50: 42 18 18;
+    --red-100: 56 22 22;
+    --red-200: 81 29 29;
+    --red-300: 116 37 37;
+    --red-400: 168 50 50;
+    --red-500: 220 74 74;
+    --red-600: 239 107 107;
+    --red-700: 245 147 147;
+    --red-800: 249 186 186;
+    --red-900: 252 220 220;
+    --red-950: 254 238 238;
+    --ground: 15 20 15;
+    --grid: rgba(140, 194, 121, 0.045);
+    color-scheme: dark;
   }
 
   body {
     @apply font-sans text-gray-800 antialiased;
-    background-color: var(--ground);
+    background-color: rgb(var(--ground));
     /* Glazing grid: 8px minor / 40px major, like greenhouse panes on graph paper */
     background-image:
       linear-gradient(var(--grid) 1px, transparent 1px),
@@ -35,7 +151,7 @@
 
   input, select, textarea { @apply font-sans; }
 
-  :focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid rgb(var(--green-700)); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -50,13 +166,13 @@
   }
 
   .glass-panel {
-    background: var(--panel);
-    border: 1px solid var(--rule);
+    background: rgb(var(--white));
+    border: 1px solid rgb(var(--gray-200));
   }
 
   .glass-pill {
-    background: var(--panel);
-    border-top: 1px solid var(--rule);
+    background: rgb(var(--white));
+    border-top: 1px solid rgb(var(--gray-200));
   }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }

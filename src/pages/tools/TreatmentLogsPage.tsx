@@ -92,7 +92,7 @@ const TreatmentLogsPage = () => {
 
       {/* Form Modals */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">{tab === 'fertilizer' ? 'Fertigation Entry' : tab === 'pest' ? 'Pathology Report' : 'Pre-Sowing Treatment'}</h2>

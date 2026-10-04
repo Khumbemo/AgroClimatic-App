@@ -112,7 +112,7 @@ const SpatialMappingPage = () => {
 
       {/* New Layout Form */}
       {showNewForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">New Greenhouse Layout</h2>
@@ -132,7 +132,7 @@ const SpatialMappingPage = () => {
 
       {/* Cell Edit Modal */}
       {editingCell && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">Position [{editingCell.row + 1}, {editingCell.col + 1}]</h2>

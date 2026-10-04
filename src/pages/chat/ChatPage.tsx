@@ -114,8 +114,8 @@ const AgroBotPage = () => {
   const parseMarkdown = (text: string) => {
     const parsed = text
       .replace(/^#{1,6}\s+(.+)$/gm, '<strong class="block text-sm font-semibold text-gray-900 mb-1">$1</strong>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-green-900 dark:text-green-400">$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em class="italic text-green-700 dark:text-green-300 font-medium">$1</em>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-green-900">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic text-green-700 font-medium">$1</em>')
       .replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-4 list-decimal my-1">$1</li>')
       .replace(/^[-•]\s+(.+)$/gm, '<li class="ml-4 list-disc my-1">$1</li>')
       .split('\n').join('<br/>');
@@ -135,7 +135,7 @@ const AgroBotPage = () => {
       </header>
 
       {/* Main Chat Area */}
-      <div className="flex-1 glass-panel rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col relative bg-white/40 dark:bg-gray-900/40">
+      <div className="flex-1 glass-panel rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative bg-white/40">
         
         {/* Messages Container */}
         <div
@@ -153,12 +153,12 @@ const AgroBotPage = () => {
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-4 shadow-inner"
+                  className="w-16 h-16 bg-green-50 rounded-xl flex items-center justify-center mb-4 shadow-inner"
                 >
                   <Bot className="w-8 h-8 text-green-600" />
                 </motion.div>
-                <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm mb-1">Ask about your nursery</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-6 italic">
+                <h3 className="font-semibold text-gray-800 text-sm mb-1">Ask about your nursery</h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-6 italic">
                   Species, seed lots, batches, VPD and trial design.
                 </p>
 
@@ -170,7 +170,7 @@ const AgroBotPage = () => {
                       whileHover={{ x: 4, backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleSend(s)}
-                      className="w-full text-left p-3 text-[11px] bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 rounded-xl transition-all text-gray-600 dark:text-gray-300 font-medium"
+                      className="w-full text-left p-3 text-[11px] bg-white/80 border border-gray-100 rounded-xl transition-all text-gray-600 font-medium"
                     >
                       {s}
                     </motion.button>
@@ -188,7 +188,7 @@ const AgroBotPage = () => {
                   <div className={`max-w-[85%] p-4 rounded-lg text-sm leading-relaxed shadow-sm ${
                     m.role === 'user'
                       ? 'bg-green-600 text-white rounded-br-none'
-                      : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                      : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
                   }`}>
                     {m.role === 'assistant' ? parseMarkdown(m.content) : m.content}
                   </div>
@@ -199,7 +199,7 @@ const AgroBotPage = () => {
 
           {isLoading && (
             <motion.div className="flex justify-start">
-              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 rounded-lg rounded-bl-none flex gap-1">
+              <div className="bg-white border border-gray-100 p-4 rounded-lg rounded-bl-none flex gap-1">
                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
                 <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-green-400 rounded-full"></motion.div>
@@ -208,9 +208,9 @@ const AgroBotPage = () => {
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 p-4 rounded-xl flex items-start gap-3">
-              <div className="bg-red-100 dark:bg-red-900/40 p-1.5 rounded-lg"><X className="w-4 h-4 text-red-600" /></div>
-              <div className="flex-1 text-xs text-red-700 dark:text-red-400 font-medium">{error}</div>
+            <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
+              <div className="bg-red-100 p-1.5 rounded-lg"><X className="w-4 h-4 text-red-600" /></div>
+              <div className="flex-1 text-xs text-red-700 font-medium">{error}</div>
             </div>
           )}
         </div>
@@ -231,15 +231,15 @@ const AgroBotPage = () => {
         )}
 
         {/* Input Area */}
-        <div className="p-4 bg-white/60 dark:bg-gray-900/60 border-t border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:border-green-500 transition-all">
+        <div className="p-4 bg-white/60 border-t border-gray-100">
+          <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm focus-within:border-green-500 transition-all">
             <input 
               type="text" 
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="Ask species, batch data, VPD..."
-              className="flex-1 bg-transparent border-none text-sm font-medium outline-none px-3 placeholder-gray-400 dark:text-white"
+              className="flex-1 bg-transparent border-none text-sm font-medium outline-none px-3 placeholder-gray-400"
               disabled={isLoading}
             />
             <motion.button
@@ -249,8 +249,8 @@ const AgroBotPage = () => {
               disabled={isLoading || !input.trim()}
               className={`p-3 rounded-xl transition-all ${
                 isLoading || !input.trim()
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-500'
-                  : 'bg-green-600 text-white shadow-sm  dark:shadow-none'
+                  ? 'bg-gray-100 text-gray-300'
+                  : 'bg-green-600 text-white shadow-sm '
               }`}
             >
               <Send className="w-4 h-4" />

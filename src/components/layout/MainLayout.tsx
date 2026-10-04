@@ -31,12 +31,12 @@ const TopHeader = () => {
 // Gable-roof greenhouse with a seedling inside: the app's mark.
 const GreenhouseMark = () => (
   <div className="w-9 h-9 rounded-md bg-green-700 flex items-center justify-center">
-    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#dcebd5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="w-6 h-6 text-green-100" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 11 12 4l9 7" />
       <path d="M5 9.5V20h14V9.5" />
       <path d="M12 20v-5" />
-      <path d="M12 16c-2.2 0-3.4-1.3-3.4-3.2 2 0 3.4 1.1 3.4 3.2Z" fill="#92bf80" stroke="none" />
-      <path d="M12 15c0-2 1.3-3.2 3.4-3.2 0 2-1.4 3.2-3.4 3.2Z" fill="#bbd8ae" stroke="none" />
+      <path d="M12 16c-2.2 0-3.4-1.3-3.4-3.2 2 0 3.4 1.1 3.4 3.2Z" className="fill-green-300" stroke="none" />
+      <path d="M12 15c0-2 1.3-3.2 3.4-3.2 0 2-1.4 3.2-3.4 3.2Z" className="fill-green-200" stroke="none" />
     </svg>
   </div>
 );

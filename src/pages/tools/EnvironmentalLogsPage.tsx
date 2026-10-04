@@ -64,7 +64,7 @@ const EnvironmentalLogsPage = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-sm">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-semibold text-lg text-gray-900">New Climate Entry</h2>
@@ -144,7 +144,7 @@ const EnvironmentalLogsPage = () => {
                   <div className="text-[8px] text-gray-400 uppercase">RH</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2">
-                  <Sun className="w-3.5 h-3.5 text-yellow-400 mx-auto mb-1" />
+                  <Sun className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1" />
                   <div className="font-mono-sci text-xs font-bold text-gray-800">{log.lightIntensity || '—'}</div>
                   <div className="text-[8px] text-gray-400 uppercase">PAR</div>
                 </div>

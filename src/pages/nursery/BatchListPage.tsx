@@ -48,7 +48,7 @@ const BatchListPage: React.FC = () => {
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-gray-900">{batch.batchNumber}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-widest ${batch.status === 'growing' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-widest ${batch.status === 'growing' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
                   {batch.status}
                 </span>
               </div>

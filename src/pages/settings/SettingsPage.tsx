@@ -37,21 +37,21 @@ const SettingsPage = () => {
           icon: theme === 'light' ? Moon : Sun,
           value: theme.charAt(0).toUpperCase() + theme.slice(1),
           onClick: toggleTheme,
-          color: 'text-green-500 bg-green-50 dark:bg-green-900/20'
+          color: 'text-green-500 bg-green-50'
         },
         {
           id: 'units',
           label: 'Metric Units',
           icon: Sliders,
           value: 'Metric (°C, kPa)',
-          color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20'
+          color: 'text-blue-500 bg-blue-50'
         },
         {
           id: 'lang',
           label: 'Language',
           icon: Globe,
           value: 'English',
-          color: 'text-green-500 bg-green-50 dark:bg-green-900/20'
+          color: 'text-green-500 bg-green-50'
         },
       ]
     },
@@ -62,19 +62,19 @@ const SettingsPage = () => {
           id: 'profile',
           label: 'Profile Settings',
           icon: User,
-          color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'
+          color: 'text-amber-500 bg-amber-50'
         },
         {
           id: 'notif',
           label: 'Notifications',
           icon: Bell,
-          color: 'text-red-500 bg-red-50 dark:bg-red-900/20'
+          color: 'text-red-500 bg-red-50'
         },
         {
           id: 'security',
           label: 'Security & Privacy',
           icon: Shield,
-          color: 'text-green-500 bg-green-50 dark:bg-green-900/20'
+          color: 'text-green-500 bg-green-50'
         },
       ]
     },
@@ -85,19 +85,19 @@ const SettingsPage = () => {
           id: 'data',
           label: 'Data Management',
           icon: Database,
-          color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20'
+          color: 'text-blue-500 bg-blue-50'
         },
         {
           id: 'help',
           label: 'Help & Support',
           icon: HelpCircle,
-          color: 'text-green-500 bg-green-50 dark:bg-green-900/20'
+          color: 'text-green-500 bg-green-50'
         },
         {
           id: 'about',
           label: 'About Lab v1.2',
           icon: Info,
-          color: 'text-gray-500 bg-gray-50 dark:bg-gray-900/20'
+          color: 'text-gray-500 bg-gray-50'
         },
       ]
     }
@@ -115,9 +115,9 @@ const SettingsPage = () => {
           {user?.displayName?.charAt(0) || 'U'}
         </div>
         <div>
-          <h2 className="text-xl font-semibold dark:text-white leading-tight">{user?.displayName || 'Research User'}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{user?.email || 'lab-user@forestry.org'}</p>
-          <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-900/20 rounded-full">
+          <h2 className="text-xl font-semibold leading-tight">{user?.displayName || 'Research User'}</h2>
+          <p className="text-xs text-gray-500 font-medium">{user?.email || 'lab-user@forestry.org'}</p>
+          <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-[9px] font-semibold text-green-600 uppercase tracking-widest">Active Scientist</span>
           </div>
@@ -127,22 +127,22 @@ const SettingsPage = () => {
       {/* Settings Sections */}
       {sections.map((section, idx) => (
         <div key={idx} className="space-y-3 px-1">
-          <h3 className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] ml-4">
+          <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] ml-4">
             {section.title}
           </h3>
-          <div className="glass-panel rounded-xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="glass-panel rounded-xl overflow-hidden divide-y divide-gray-100">
             {section.items.map((item) => (
               <motion.button
                 key={item.id}
                 whileTap={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
                 onClick={item.onClick}
-                className="w-full p-5 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                className="w-full p-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className={`p-2.5 rounded-xl ${item.color}`}>
                     <item.icon className="w-5 h-5" />
                   </div>
-                  <span className="font-bold text-sm dark:text-gray-200">{item.label}</span>
+                  <span className="font-bold text-sm">{item.label}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   {item.value && (
@@ -161,14 +161,14 @@ const SettingsPage = () => {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => logout()}
-        className="w-full p-5 flex items-center justify-center gap-3 bg-red-50 dark:bg-red-900/10 text-red-600 rounded-xl border border-red-100 dark:border-red-900/20 font-semibold text-xs uppercase tracking-[0.2em] shadow-sm"
+        className="w-full p-5 flex items-center justify-center gap-3 bg-red-50 text-red-600 rounded-xl border border-red-100 font-semibold text-xs uppercase tracking-[0.2em] shadow-sm"
       >
         <LogOut className="w-4 h-4" />
         Logout Session
       </motion.button>
 
       <div className="text-center pt-4">
-        <p className="text-[8px] font-semibold text-gray-300 dark:text-gray-600 uppercase tracking-[0.3em]">
+        <p className="text-[8px] font-semibold text-gray-300 uppercase tracking-[0.3em]">
           AgroClimatic Lab Systems • Encryption Active
         </p>
       </div>
