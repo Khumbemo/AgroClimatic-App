@@ -59,6 +59,15 @@ both are unit-tested against hand-worked values (`npm test`).
 
 Settings → Data exports every collection as JSON and restores it (validated, upserted by id).
 
+## GitHub Pages
+
+`.github/workflows/pages.yml` lints, tests and builds every pull request, and on each push to
+the default branch deploys the app to `https://<owner>.github.io/<repo>/`. One-time setup:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**. Without Firebase
+secrets the site runs in demo mode (records stay in the visitor's browser); add the
+`VITE_FIREBASE_*` (and optionally `VITE_GEMINI_API_KEY`) repository secrets to use real accounts,
+and add the Pages domain to Firebase Authentication's authorised domains.
+
 ## Configuration
 
 Copy `.env.example` to `.env` and fill in the Firebase web-app keys. Leave them unset for
