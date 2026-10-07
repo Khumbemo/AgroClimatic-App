@@ -1,0 +1,26 @@
+[theme]
+primaryColor = "#15803d"
+font = "sans-serif"
+codeFont = "monospace"
+baseRadius = "small"
+
+[theme.light]
+primaryColor = "#15803d"
+backgroundColor = "#fbfcfa"
+secondaryBackgroundColor = "#eef3ec"
+textColor = "#1a2b1f"
+
+[theme.dark]
+primaryColor = "#4ade80"
+backgroundColor = "#0f1712"
+secondaryBackgroundColor = "#18241c"
+textColor = "#e6efe8"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
