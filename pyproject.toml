@@ -1,0 +1,24 @@
+[project]
+name = "agroclimatic"
+version = "3.0.0"
+description = "Nursery and greenhouse research app: records, seedling science and trial statistics."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["scripts"]  # reference-value generators, run separately with statsmodels
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP"]
+ignore = [
+    "E501",  # long user-facing strings are kept whole
+    "E741",  # `l` is a natural name for a calibration log row
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app_pages/*.py" = ["B023"]  # form callbacks run immediately inside the loop iteration
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:altair.*"]
