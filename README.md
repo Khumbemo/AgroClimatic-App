@@ -14,7 +14,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app opens at http://localhost:8501. On first start it creates `data/agroclimatic.db`
+The app opens at http://localhost:8501. It adapts to phones, tablets and laptops: section menus run across the top on tablets and larger screens and fold into a ☰ menu on phones, and rows of figures and form fields wrap instead of shrinking. On first start it creates `data/agroclimatic.db`
 (SQLite) with three reference species and a set of example records (batches, climate
 readings, germination counts, growth measurements and an RCBD substrate trial) so every tool
 can be explored. Examples are labelled in the app and can be removed in **Settings**. Set

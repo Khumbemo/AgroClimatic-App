@@ -1,7 +1,7 @@
 import streamlit as st
 
 from agroclimatic.data.schema import PRESOWING_TYPES
-from agroclimatic.ui.common import BatchIndex, by_date_desc, header, iso, num, record_table, save, store, today
+from agroclimatic.ui.common import BatchIndex, by_date_desc, header, iso, num, record_table, row, save, store, today
 
 s = store()
 idx = BatchIndex(s)
@@ -25,11 +25,11 @@ fert_tab, pest_tab, pre_tab = st.tabs(
 with fert_tab:
     with st.expander("New fertigation event", icon=":material/add:"):
         with st.form("fert", clear_on_submit=True):
-            c = st.columns(2)
+            c = row(2)
             d = c[0].date_input("Date", today(), format="YYYY-MM-DD")
             npk = c[1].text_input("N-P-K ratio", placeholder="20-20-20")
             batch = idx.select("Applied to", "fert-batch", allow_whole=True)
-            c = st.columns(3)
+            c = row(3)
             dose = c[0].number_input("Dose (mg L⁻¹)", min_value=0.0, step=0.1, value=None)
             ph = c[1].number_input("pH", min_value=0.0, max_value=14.0, step=0.1, value=None)
             ec = c[2].number_input("EC (mS cm⁻¹)", min_value=0.0, step=0.01, value=None)
@@ -69,12 +69,12 @@ with fert_tab:
 with pest_tab:
     with st.expander("New pest or disease observation", icon=":material/add:"):
         with st.form("pest", clear_on_submit=True):
-            c = st.columns(2)
+            c = row(2)
             d = c[0].date_input("Date", today(), format="YYYY-MM-DD")
             with c[1]:
                 batch = idx.select("Batch", "pest-batch", allow_whole=True)
             name = st.text_input("Pest or disease", placeholder="Damping-off (Pythium spp.)")
-            c = st.columns(2)
+            c = row(2)
             inc = c[0].number_input("Incidence (% plants)", min_value=0.0, max_value=100.0, step=0.1, value=None)
             sev = c[1].selectbox("Severity", [1, 2, 3, 4, 5], format_func=lambda n: f"{n} – {SEVERITY[n - 1]}")
             chem = st.text_input("Treatment applied", placeholder="Product and rate, if any")
@@ -114,14 +114,14 @@ with pest_tab:
 with pre_tab:
     with st.expander("New pre-sowing treatment", icon=":material/add:"):
         with st.form("pre", clear_on_submit=True):
-            c = st.columns(2)
+            c = row(2)
             d = c[0].date_input("Date", today(), format="YYYY-MM-DD")
             with c[1]:
                 batch = idx.select("Batch", "pre-batch")
             kind = st.selectbox(
                 "Treatment", PRESOWING_TYPES, index=PRESOWING_TYPES.index("soaking"), format_func=TREATMENT_LABELS.get
             )
-            c = st.columns(2)
+            c = row(2)
             duration = c[0].text_input("Duration", placeholder="30 days at 4 °C")
             conc = c[1].text_input("Concentration", placeholder="250 ppm")
             notes = st.text_area("Notes", height=70)

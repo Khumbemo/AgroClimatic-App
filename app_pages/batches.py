@@ -21,6 +21,7 @@ from agroclimatic.ui.common import (
     iso,
     num,
     parse_date,
+    row,
     save,
     seed_lot_select,
     species_select,
@@ -49,26 +50,26 @@ def batch_form(existing: dict | None) -> None:
     key = f"bf-{e.get('id', 'new')}"
     with st.form(key, clear_on_submit=existing is None):
         number = st.text_input("Batch number", e.get("batchNumber") or f"NB-{today().year}-", key=f"{key}-n")
-        c = st.columns(2)
+        c = row(2)
         with c[0]:
             species = species_select(s, "Species", f"{key}-sp", e.get("speciesId"))
         with c[1]:
             lot = seed_lot_select(s, "Seed lot", f"{key}-lot", e.get("seedLotId"))
-        c = st.columns(2)
+        c = row(2)
         sowing = c[0].date_input(
             "Sowing date", parse_date(e.get("sowingDate")) if existing else today(), format="YYYY-MM-DD", key=f"{key}-d"
         )
         status = c[1].selectbox(
             "Stage", BATCH_STATUSES, index=BATCH_STATUSES.index(e.get("status", "sown")), key=f"{key}-st"
         )
-        c = st.columns(2)
+        c = row(2)
         seeds = c[0].number_input(
             "Seeds sown", min_value=1, step=1, value=e.get("seedsSown"), placeholder="1000", key=f"{key}-seeds"
         )
         area = c[1].number_input(
             "Area sown (m²)", min_value=0.0, step=0.1, value=e.get("areaSownM2"), placeholder="1.5", key=f"{key}-area"
         )
-        c = st.columns(2)
+        c = row(2)
         tray = c[0].text_input("Bed / tray", e.get("bedTrayNumber") or "", placeholder="B-01", key=f"{key}-tray")
         substrate = c[1].text_input(
             "Substrate mix", e.get("substrateMix") or "", placeholder="Coir : soil (70 : 30)", key=f"{key}-sub"
@@ -125,7 +126,7 @@ def detail(b: dict) -> None:
     span = days_after_sowing(last["date"], first["date"]) if growth else 0
     rgr = relative_growth_rate(first["avgHeightCm"], last["avgHeightCm"], span) if growth and span > 0 else None
 
-    m = st.columns(4)
+    m = row(4)
     m[0].metric("Seeds sown", f"{sown:,}" if sown else "—")
     m[1].metric("Germination", fmt(germ_pct, 1, "%"))
     m[2].metric(
@@ -152,7 +153,7 @@ def detail(b: dict) -> None:
             hide_index=True,
         )
         st.markdown("**Linked records**")
-        cols = st.columns(4)
+        cols = row(4)
         for i, (col, (label, page)) in enumerate(LINKED.items()):
             n = sum(1 for r in s.list(col) if r.get("batchId") == b["id"])
             cols[i % 4].page_link(page, label=f"{label}: {n}")
@@ -167,7 +168,7 @@ def detail(b: dict) -> None:
             labels = [f"D{days_after_sowing(c['date'], sowing)}" if sowing else c["date"] for c in counts]
             mgt = mean_germination_time(counts, sowing) if sowing else None
             energy = germination_energy(counts, sown, sowing, 7) if sowing else None
-            g = st.columns(3)
+            g = row(3)
             g[0].metric("Mean germination time", fmt(mgt, 1, "days"), help="Σ(tᵢ·nᵢ)/Σnᵢ from the sowing date")
             g[1].metric("Germination energy (day 7)", fmt(energy, 1, "%"))
             g[2].metric("Germinated", f"{sum(c['count'] for c in counts):,}")
@@ -204,7 +205,7 @@ def detail(b: dict) -> None:
                 if with_mass
                 else None
             )
-            g = st.columns(2)
+            g = row(2)
             g[0].metric(
                 "Dickson quality index",
                 fmt(dqi, 2),
@@ -304,7 +305,12 @@ else:
                 for b in ordered
             ]
             event = st.dataframe(
-                rows, hide_index=True, on_select="rerun", selection_mode="single-row", key="batch-list"
+                rows,
+                placeholder="—",
+                hide_index=True,
+                on_select="rerun",
+                selection_mode="single-row",
+                key="batch-list",
             )
             st.caption("Select a batch to open its record, charts and edit form.")
             if event.selection.rows:

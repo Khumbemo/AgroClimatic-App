@@ -40,5 +40,18 @@ pages = {
     ],
 }
 
+# Keep lines and tables readable on wide desktop monitors; phones and tablets use the full width.
+# On touch screens, give the 16 px "?" help icons (formulas, units) a 40 px tap area without moving them.
+st.html(
+    """<style>
+[data-testid='stMainBlockContainer'] { max-width: 1280px; margin: 0 auto; }
+@media (pointer: coarse) {
+  [data-testid='stTooltipHoverTarget'] button { position: relative; }
+  [data-testid='stTooltipHoverTarget'] button::after { content: ''; position: absolute; inset: -12px; }
+}
+</style>"""
+)
 st.logo("assets/logo.svg", icon_image="assets/icon.svg", size="large")
-st.navigation(pages, position="sidebar", expanded=True).run()
+# Top navigation: section menus across the top on tablets and laptops, so the content gets the full
+# screen width; on phones Streamlit folds the same menu into a slide-out panel.
+st.navigation(pages, position="top").run()

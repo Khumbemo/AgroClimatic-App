@@ -9,7 +9,7 @@ from agroclimatic.science.anova import AnalysisError, AnovaResult, analyse
 from agroclimatic.science.trial_design import DESIGN_LABELS, DESIGN_TYPES, design_problem, generate_layout, new_seed
 from agroclimatic.services.ai import ai_enabled, suggest_design
 from agroclimatic.ui import charts
-from agroclimatic.ui.common import flash, header, save, store
+from agroclimatic.ui.common import flash, header, row, save, store
 
 s = store()
 header("Experimental design", "Randomised layouts for CRD, RCBD, Latin square and split-plot trials, with ANOVA.")
@@ -61,7 +61,7 @@ with st.expander("New experiment", icon=":material/add:", expanded=not s.count("
         st.caption("Check the suggestion before creating the layout.")
     name = st.text_input("Experiment name", placeholder="Substrate × nitrogen trial 2026", key="exp-name")
     design = st.selectbox("Design", DESIGN_TYPES, format_func=DESIGN_LABELS.get, index=1, key="exp-design")
-    c = st.columns(2)
+    c = row(2)
     treatments_text = c[0].text_area(
         "Main-plot levels" if design == "Split_Plot" else "Treatments",
         placeholder="One per line, e.g.\nControl\nGA₃ 250 ppm\nCold stratification 30 d",
@@ -150,7 +150,7 @@ def show_analysis(result: AnovaResult, unit: str, label, values_in_order: list[f
         ]
     )
     st.markdown("**Analysis of variance**")
-    st.dataframe(table, hide_index=True)
+    st.dataframe(table, hide_index=True, placeholder="")
     cv = " · ".join(f"{lbl} {v:.1f} %" for lbl, v in result.cv)
     st.caption(
         f"n = {result.n} · grand mean {sig(result.grand_mean, 4)} {unit} · {cv}"
@@ -186,11 +186,18 @@ def show_analysis(result: AnovaResult, unit: str, label, values_in_order: list[f
             st.dataframe(
                 pd.DataFrame(
                     [
-                        {"Level": label(m.level), "Mean": sig(m.mean), "SE": sig(m.se, 3), "n": m.n, "Group": m.letters}
+                        {
+                            "Level": label(m.level),
+                            "Mean": sig(m.mean),
+                            "SE": sig(m.se, 3),
+                            "n": m.n,
+                            "Group": m.letters,
+                        }
                         for m in comp.means
                     ]
                 ),
                 hide_index=True,
+                placeholder="",
             )
         note = (
             f"Means sharing a letter are not significantly different (α = 0.05; error df {comp.error_df}). "
@@ -307,7 +314,7 @@ st.caption(
     + f" · created {exp['createdAt'][:10]}"
     + (f" · seed {exp['seed']}" if exp.get("seed") is not None else "")
 )
-m = st.columns(3)
+m = row(3)
 m[0].metric(
     "Treatments", f"{len(exp['treatments'])}" + (f" × {len(exp['subTreatments'])}" if exp.get("subTreatments") else "")
 )
@@ -450,7 +457,7 @@ with results_tab:
         with st.expander(
             "Enter or edit values" if var else "Record results", expanded=var is None, icon=":material/edit:"
         ):
-            c = st.columns(2)
+            c = row(2)
             vname = c[0].text_input(
                 "Variable", var["name"] if var else "", placeholder="Height at 90 days", key=f"vn-{exp_id}-{choice}"
             )
@@ -473,7 +480,7 @@ with results_tab:
                 key=f"ve-{exp_id}-{choice}",
             )
             st.caption("Leave a value blank if the plot is missing. You can paste a column from a spreadsheet.")
-            c = st.columns([1, 1, 3])
+            c = row(2, align="center")
             if c[0].button("Save results", type="primary", key=f"vs-{exp_id}-{choice}"):
                 values = {
                     str(int(r["Plot"])): float(r["Value"])

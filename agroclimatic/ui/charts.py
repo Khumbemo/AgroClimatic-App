@@ -150,7 +150,10 @@ def scatter(
 
 def show(fig: go.Figure, key: str | None = None) -> None:
     st.plotly_chart(
-        fig, theme=None, key=key, config={"displaylogo": False, "modeBarButtonsToRemove": ["select2d", "lasso2d"]}
+        fig,
+        theme=None,
+        key=key,
+        config={"displayModeBar": False},  # on touch screens the bar would sit over the chart
     )
 
 
