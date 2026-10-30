@@ -2,7 +2,7 @@ from datetime import date
 
 import streamlit as st
 
-from agroclimatic.ui.common import header, iso, record_table, save, store, today
+from agroclimatic.ui.common import header, iso, record_table, row, save, store, today
 
 INSTRUMENTS = [
     "pH meter",
@@ -38,7 +38,7 @@ for l in reversed(logs):
     latest[l["instrumentName"].strip().lower()] = l
 ranks = [status(l.get("nextDueDate"))[1] for l in latest.values()]
 if latest:
-    c = st.columns(3)
+    c = row(3)
     c[0].metric("Overdue", ranks.count(0), help="instruments")
     c[1].metric("Due within 14 days", ranks.count(1), help="instruments")
     c[2].metric("Valid", ranks.count(3), help=f"of {len(latest)} instruments")
@@ -72,7 +72,7 @@ with st.expander("New calibration", icon=":material/add:", expanded=not logs):
     with st.form("cal", clear_on_submit=True):
         name = st.text_input("Instrument (name or serial)", placeholder="EC-01 / SN 12345")
         kind = st.selectbox("Type", INSTRUMENTS)
-        c = st.columns(2)
+        c = row(2)
         on = c[0].date_input("Calibrated on", today(), format="YYYY-MM-DD")
         due = c[1].date_input("Next due", value=None, format="YYYY-MM-DD")
         std = st.text_input("Reference standard", placeholder="pH 4.01 / 7.00 buffers")

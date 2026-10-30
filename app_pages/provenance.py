@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from agroclimatic.ui.common import BatchIndex, header, iso, num, record_table, save, seed_lot_select, store, today
+from agroclimatic.ui.common import BatchIndex, header, iso, num, record_table, row, save, seed_lot_select, store, today
 
 ASPECTS = ["", "N", "NE", "E", "SE", "S", "SW", "W", "NW", "Flat"]
 s = store()
@@ -46,13 +46,13 @@ record_table(
 
 with st.expander("New provenance record", icon=":material/add:", expanded=not records):
     with st.form("prov", clear_on_submit=True):
-        c = st.columns(2)
+        c = row(2)
         with c[0]:
             lot = seed_lot_select(s, "Seed lot", "prov-lot")
         d = c[1].date_input("Collection date", today(), format="YYYY-MM-DD")
         collector = st.text_input("Collector")
         st.markdown("**Site (WGS 84, decimal degrees)**")
-        c = st.columns(4)
+        c = row(4)
         lat = c[0].number_input(
             "Latitude (° N)",
             min_value=-90.0,
@@ -76,7 +76,7 @@ with st.expander("New provenance record", icon=":material/add:", expanded=not re
         elev = c[2].number_input("Elevation (m a.s.l.)", step=1.0, value=None)
         aspect = c[3].selectbox("Aspect", ASPECTS, format_func=lambda a: a or "Not recorded")
         zone = st.text_input("Climate zone", placeholder="e.g. Köppen Cwb")
-        c = st.columns(2)
+        c = row(2)
         trees = c[0].number_input("Mother trees", min_value=1, step=1, value=1)
         canopy = c[1].text_input("Canopy position", placeholder="Upper crown")
         pheno = st.text_input("Phenotype traits")

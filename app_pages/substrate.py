@@ -3,7 +3,19 @@ import streamlit as st
 
 from agroclimatic.science.calculations import leaching_fraction
 from agroclimatic.ui import charts
-from agroclimatic.ui.common import BatchIndex, by_date_desc, fmt, header, iso, num, record_table, save, store, today
+from agroclimatic.ui.common import (
+    BatchIndex,
+    by_date_desc,
+    fmt,
+    header,
+    iso,
+    num,
+    record_table,
+    row,
+    save,
+    store,
+    today,
+)
 
 s = store()
 idx = BatchIndex(s)
@@ -25,7 +37,7 @@ leach_tab, mix_tab = st.tabs([":material/science: Leachate tests", ":material/la
 with leach_tab:
     if tests:
         t = tests[0]
-        c = st.columns(4)
+        c = row(4)
         c[0].metric("EC out", fmt(t.get("ecOut"), 2, "mS cm⁻¹"), help=t["date"])
         c[1].metric(
             "ΔEC (out − in)",
@@ -60,17 +72,17 @@ with leach_tab:
             charts.show(fig)
     with st.expander("New leachate test", icon=":material/add:", expanded=not tests):
         with st.form("leach", clear_on_submit=True):
-            c = st.columns(2)
+            c = row(2)
             d = c[0].date_input("Date", today(), format="YYYY-MM-DD")
             with c[1]:
                 batch = idx.select("Batch", "leach-batch")
             st.markdown("**Irrigation water (in)**")
-            c = st.columns(3)
+            c = row(3)
             ph_in = c[0].number_input("pH in", min_value=0.0, max_value=14.0, step=0.01, value=None, placeholder="6.5")
             ec_in = c[1].number_input("EC in (mS cm⁻¹)", min_value=0.0, step=0.01, value=None, placeholder="1.2")
             applied = c[2].number_input("Volume applied (mL)", min_value=0.0, step=1.0, value=None)
             st.markdown("**Leachate (out)**")
-            c = st.columns(3)
+            c = row(3)
             ph_out = c[0].number_input(
                 "pH out", min_value=0.0, max_value=14.0, step=0.01, value=None, placeholder="5.8"
             )

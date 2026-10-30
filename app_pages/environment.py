@@ -2,7 +2,19 @@ import streamlit as st
 
 from agroclimatic.science.calculations import daily_light_integral, dew_point, growing_degree_days, vpd, vpd_band
 from agroclimatic.ui import charts
-from agroclimatic.ui.common import by_date_desc, example_note, fmt, header, iso, num, record_table, save, store, today
+from agroclimatic.ui.common import (
+    by_date_desc,
+    example_note,
+    fmt,
+    header,
+    iso,
+    num,
+    record_table,
+    row,
+    save,
+    store,
+    today,
+)
 
 s = store()
 logs = by_date_desc(s.list("climateReadings"))
@@ -11,7 +23,7 @@ header("Environmental logs", "Daily greenhouse climate: temperature, humidity, l
 if logs:
     r = logs[0]
     v = vpd(r["tempMean"], r["humidity"])
-    c = st.columns(4)
+    c = row(4)
     c[0].metric(
         "Mean temperature", fmt(r["tempMean"], 1, "°C"), help=f"{r['tempMin']:g}–{r['tempMax']:g} °C on {r['date']}"
     )
@@ -54,13 +66,13 @@ if len(chron) >= 2:
 with st.expander("New climate reading", icon=":material/add:", expanded=not logs):
     with st.form("new-climate", clear_on_submit=True):
         d = st.date_input("Date", today(), format="YYYY-MM-DD")
-        c = st.columns(3)
+        c = row(3)
         t_min = c[0].number_input("T min (°C)", step=0.1, value=None, placeholder="12.5")
         t_max = c[1].number_input("T max (°C)", step=0.1, value=None, placeholder="28.3")
         t_mean = c[2].number_input(
             "T mean (°C)", step=0.1, value=None, placeholder="auto", help="Leave blank to use (min + max) / 2."
         )
-        c = st.columns(4)
+        c = row(4)
         rh = c[0].number_input("Relative humidity (%)", min_value=0.0, max_value=100.0, step=0.1, value=None)
         par = c[1].number_input("PAR (µmol m⁻² s⁻¹)", min_value=0.0, step=1.0, value=None)
         photo = c[2].number_input("Photoperiod (h)", min_value=0.0, max_value=24.0, step=0.5, value=None)

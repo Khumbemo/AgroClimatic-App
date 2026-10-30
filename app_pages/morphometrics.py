@@ -16,6 +16,7 @@ from agroclimatic.ui.common import (
     iso,
     num,
     record_table,
+    row,
     save,
     store,
     today,
@@ -50,11 +51,11 @@ if rows:
     span = days_after_sowing(latest["date"], first["date"])
     rgr = relative_growth_rate(first["avgHeightCm"], latest["avgHeightCm"], span) if span > 0 else None
     with_mass = next((g for g in rows if dqi(g) is not None), None)
-    c = st.columns(3)
+    c = row(3)
     c[0].metric("Height", fmt(latest["avgHeightCm"], 1, "cm"), help=f"n = {latest['sampleSize']} · {latest['date']}")
     c[1].metric("Root-collar diameter", fmt(latest["avgRCDmm"], 2, "mm"))
     c[2].metric("Sturdiness H/D", fmt(sturdiness_quotient(latest["avgHeightCm"], latest["avgRCDmm"]), 1, "cm mm⁻¹"))
-    c = st.columns(3)
+    c = row(3)
     c[0].metric(
         "RGR (height)",
         fmt(rgr, 3, "d⁻¹"),
@@ -90,13 +91,13 @@ elif not batch_id and rows:
 
 with st.expander("New measurement", icon=":material/add:", expanded=not items):
     with st.form("growth", clear_on_submit=True):
-        c = st.columns(3)
+        c = row(3)
         with c[0]:
             b = idx.select("Batch", "growth-batch", value=batch_id)
         d = c[1].date_input("Date", today(), format="YYYY-MM-DD")
         n = c[2].number_input("Sample size (n)", min_value=1, step=1, value=30)
         st.markdown("**Non-destructive (means per seedling)**")
-        c = st.columns(5)
+        c = row(5)
         h = c[0].number_input("Height (cm)", min_value=0.0, step=0.1, value=None, placeholder="15.2")
         rcd = c[1].number_input("Root-collar Ø (mm)", min_value=0.0, step=0.01, value=None, placeholder="4.20")
         leaves = c[2].number_input("Leaves (count)", min_value=0.0, step=1.0, value=None)
@@ -105,7 +106,7 @@ with st.expander("New measurement", icon=":material/add:", expanded=not items):
         st.markdown(
             "**Destructive sample (optional)** · mean mass per seedling; dry mass after oven-drying to constant weight"
         )
-        c = st.columns(4)
+        c = row(4)
         sfw = c[0].number_input("Shoot fresh (g)", min_value=0.0, step=0.001, value=None, format="%.3f")
         rfw = c[1].number_input("Root fresh (g)", min_value=0.0, step=0.001, value=None, format="%.3f")
         sdw = c[2].number_input("Shoot dry (g)", min_value=0.0, step=0.001, value=None, format="%.3f")

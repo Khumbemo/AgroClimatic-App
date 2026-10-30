@@ -30,6 +30,23 @@ def store() -> Store:
 
 
 # ---------------------------------------------------------------------------
+# Layout
+# ---------------------------------------------------------------------------
+
+
+def row(n: int, align: str = "top") -> list:
+    """
+    A row of metrics or form fields that wraps onto more lines on narrow screens, so nothing is
+    squeezed or cut off on phones and portrait tablets (fixed st.columns keep every item in one row).
+
+    Returns `n` handles to the same horizontal container so call sites read like st.columns:
+    `c = row(3); c[0].metric(...); c[1].metric(...)`. Items appear in the order they are written.
+    """
+    box = st.container(horizontal=True, gap="medium", vertical_alignment=align)
+    return [box] * n
+
+
+# ---------------------------------------------------------------------------
 # Formatting
 # ---------------------------------------------------------------------------
 
@@ -188,12 +205,14 @@ def record_table(
         if any(x.get("isExample") for x in rows):
             line["Example"] = "yes" if r.get("isExample") else ""
         data.append(line)
-    df = pd.DataFrame(data)
-    for col in df.columns:  # blank instead of "None" in text columns; numeric gaps stay empty (NaN)
-        if not pd.api.types.is_numeric_dtype(df[col]):
-            df[col] = df[col].fillna("")
     event = st.dataframe(
-        df, hide_index=True, on_select="rerun", selection_mode="multi-row", key=f"{key}-table", height=height
+        pd.DataFrame(data),
+        placeholder="—",  # not recorded
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="multi-row",
+        key=f"{key}-table",
+        height=height,
     )
     selected = [rows[i]["id"] for i in event.selection.rows] if event and event.selection else []
     if selected:

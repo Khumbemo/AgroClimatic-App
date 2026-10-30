@@ -10,7 +10,7 @@ from agroclimatic.science.calculations import (
 )
 from agroclimatic.services.ai import ai_enabled, interpret
 from agroclimatic.ui import charts
-from agroclimatic.ui.common import BatchIndex, by_date_desc, fmt, header, iso, record_table, save, store, today
+from agroclimatic.ui.common import BatchIndex, by_date_desc, fmt, header, iso, record_table, row, save, store, today
 
 s = store()
 idx = BatchIndex(s)
@@ -34,7 +34,7 @@ if not batch:
 
 counts = sorted((c for c in all_counts if c.get("batchId") == batch_id), key=lambda c: (c["date"], c["createdAt"]))
 n0, sowing = batch.get("seedsSown") or 0, batch.get("sowingDate")
-c = st.columns(2)
+c = row(2)
 c[0].caption(f"Seeds sown (N): **{n0 or '—'}**")
 c[1].caption(f"Sowing date: **{sowing or '—'}**")
 if not batch.get("seedsSown"):
@@ -54,7 +54,7 @@ gp = germination_percent(counts, n0)
 ge = germination_energy(counts, n0, sowing, 7) if sowing else None
 gsi = germination_speed_index(counts, sowing) if sowing and counts else None
 mgt = mean_germination_time(counts, sowing) if sowing else None
-m = st.columns(4)
+m = row(4)
 m[0].metric("Germination", fmt(gp, 1, "%"), help=f"Σn / N × 100 · {total} seeds")
 m[1].metric("Energy (day 7)", fmt(ge, 1, "%"), help="% of seeds sown that germinated by day 7 after sowing")
 m[2].metric("Speed index", fmt(gsi, 2, "seeds d⁻¹"), help="Maguire (1962): Σ(nᵢ / tᵢ)")
@@ -62,7 +62,7 @@ m[3].metric("Mean germination time", fmt(mgt, 1, "days"), help="Σ(tᵢ·nᵢ) /
 
 with st.form("new-count", clear_on_submit=True):
     st.markdown(f"**New count · {batch['batchNumber']}**")
-    c = st.columns([1, 1, 1], vertical_alignment="bottom")
+    c = row(3, align="bottom")
     d = c[0].date_input("Count date", today(), format="YYYY-MM-DD")
     n = c[1].number_input("Newly germinated since last count", min_value=0, step=1, value=None, placeholder="0")
     if c[2].form_submit_button("Save count", type="primary"):

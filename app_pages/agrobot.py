@@ -34,10 +34,10 @@ for m in messages:
 pending = None
 if not messages:
     st.caption("Try one of these:")
-    cols = st.columns(len(STARTERS))
-    for i, q in enumerate(STARTERS):
-        if cols[i].button(q, key=f"starter-{i}"):
-            pending = q
+    with st.container(horizontal=True, gap="small"):  # wraps on narrow screens
+        for i, q in enumerate(STARTERS):
+            if st.button(q, key=f"starter-{i}"):
+                pending = q
 prompt = st.chat_input("Ask about your batches, seed lots or nursery science")
 question = prompt or pending
 

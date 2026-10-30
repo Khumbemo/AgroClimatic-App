@@ -4,7 +4,7 @@ import streamlit as st
 
 from agroclimatic.science.calculations import days_after_sowing
 from agroclimatic.ui import charts
-from agroclimatic.ui.common import BatchIndex, by_date_desc, header, iso, record_table, save, store, today
+from agroclimatic.ui.common import BatchIndex, by_date_desc, header, iso, record_table, row, save, store, today
 
 CAUSES = [
     "Damping-off (Pythium/Rhizoctonia)",
@@ -42,11 +42,11 @@ by_cause = Counter()
 for e in events:
     by_cause[e["causeCode"]] += e["count"]
 
-c = st.columns(3)
+c = row(3)
 c[0].caption(f"Seeds sown: **{batch.get('seedsSown') or '—'}**")
 c[1].caption(f"Emerged: **{germinated}**")
 c[2].caption(f"Sowing date: **{batch.get('sowingDate') or '—'}**")
-m = st.columns(3)
+m = row(3)
 m[0].metric(
     "Survival",
     f"{survival:.1f} %" if survival is not None else "—",
@@ -69,7 +69,7 @@ if by_cause:
 
 with st.form("mort", clear_on_submit=True):
     st.markdown(f"**Record losses · {batch['batchNumber']}**")
-    c = st.columns(2)
+    c = row(2)
     d = c[0].date_input("Inspection date", today(), format="YYYY-MM-DD")
     n = c[1].number_input("Dead seedlings", min_value=1, step=1, value=None)
     sown = None

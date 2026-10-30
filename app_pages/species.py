@@ -1,7 +1,7 @@
 import streamlit as st
 
 from agroclimatic.data.schema import STORAGE_BEHAVIOURS
-from agroclimatic.ui.common import header, record_table, save, store
+from agroclimatic.ui.common import header, record_table, row, save, store
 
 s = store()
 species = sorted(s.list("species"), key=lambda x: x["botanicalName"])
@@ -48,7 +48,7 @@ else:
 with st.expander("Add species", icon=":material/add:"):
     with st.form("new-species", clear_on_submit=True):
         name = st.text_input("Botanical name", placeholder="Quercus semecarpifolia")
-        c = st.columns(3)
+        c = row(3)
         common = c[0].text_input("Common name")
         family = c[1].text_input("Family")
         storage = c[2].selectbox(

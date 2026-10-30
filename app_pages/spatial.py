@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from agroclimatic.data.schema import PLACEMENT_STATUSES
-from agroclimatic.ui.common import BatchIndex, flash, header, save, store
+from agroclimatic.ui.common import BatchIndex, flash, header, row, save, store
 
 STATUS_LABEL = {
     "empty": "Empty",
@@ -29,7 +29,7 @@ header("Spatial mapping", "Bench layouts per greenhouse, linked to batches.")
 with st.expander("New greenhouse layout", icon=":material/add:", expanded=not layouts):
     with st.form("gh", clear_on_submit=True):
         name = st.text_input("Greenhouse name", placeholder="GH-01 propagation house")
-        c = st.columns(2)
+        c = row(2)
         rows = c[0].number_input("Benches (rows)", min_value=1, max_value=50, step=1, value=4)
         cols = c[1].number_input("Positions per bench", min_value=1, max_value=50, step=1, value=6)
         if st.form_submit_button("Create layout", type="primary"):
@@ -87,7 +87,7 @@ st.caption(
 
 with st.form("cell"):
     st.markdown("**Place a batch or change a position**")
-    c = st.columns(4)
+    c = row(4)
     r = c[0].number_input("Bench", min_value=1, max_value=gh["rows"], step=1, value=1)
     p = c[1].number_input("Position", min_value=1, max_value=gh["cols"], step=1, value=1)
     stage = c[2].selectbox(

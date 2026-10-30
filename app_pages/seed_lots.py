@@ -8,6 +8,7 @@ from agroclimatic.ui.common import (
     iso,
     num,
     record_table,
+    row,
     save,
     species_select,
     store,
@@ -21,7 +22,7 @@ provenance = s.list("provenanceRecords")
 header("Seed lots", "Seed stock with moisture content, viability and thousand-seed weight.")
 
 if lots:
-    c = st.columns(3)
+    c = row(3)
     c[0].metric("Lots", len(lots))
     c[1].metric("In stock", sum(1 for x in lots if (x.get("stockKg") or 0) > 0))
     c[2].metric("Total stock", fmt(sum(x.get("stockKg") or 0 for x in lots), 2, "kg"))
@@ -61,11 +62,11 @@ example_note(lots)
 
 with st.expander("New seed lot", icon=":material/add:", expanded=not lots):
     with st.form("new-lot", clear_on_submit=True):
-        c = st.columns(2)
+        c = row(2)
         number = c[0].text_input("Lot number", placeholder="SL-003")
         collected = c[1].date_input("Collection date", value=None, format="YYYY-MM-DD")
         species = species_select(s, "Species", "lot-sp")
-        c = st.columns(4)
+        c = row(4)
         stock = c[0].number_input("Stock (kg)", min_value=0.0, step=0.01, value=None)
         tsw = c[1].number_input("1000-seed weight (g)", min_value=0.0, step=0.01, value=None)
         mc = c[2].number_input("Moisture content (%)", min_value=0.0, max_value=100.0, step=0.1, value=None)

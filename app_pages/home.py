@@ -9,7 +9,7 @@ from agroclimatic.science.calculations import (
     vpd,
     vpd_band,
 )
-from agroclimatic.ui.common import by_date_desc, fmt, header, store
+from agroclimatic.ui.common import by_date_desc, fmt, header, row, store
 
 s = store()
 today = date.today()
@@ -26,15 +26,15 @@ header("Overview", f"{today:%A %d %B %Y}")
 # --- Greenhouse climate -----------------------------------------------------
 reading = climate[0] if climate else None
 with st.container(border=True):
-    top = st.columns([4, 1])
-    top[0].subheader("Greenhouse climate", anchor=False)
-    if reading and reading.get("isExample"):
-        top[1].caption(":material/science: Example data")
+    st.subheader("Greenhouse climate", anchor=False)
     if reading:
         v = vpd(reading["tempMean"], reading["humidity"])
         band = vpd_band(v)
-        st.caption(f"Latest reading · {reading['date']}")
-        c = st.columns(4)
+        st.caption(
+            f"Latest reading · {reading['date']}"
+            + (" · :material/science: example data" if reading.get("isExample") else "")
+        )
+        c = row(4)
         c[0].metric(
             "Air temperature",
             fmt(reading["tempMean"], 1, "°C"),
@@ -78,7 +78,7 @@ germ = [
     )
     if g
 ]
-k = st.columns(3)
+k = row(3)
 k[0].metric("Active batches", len(active), help=f"{len(batches) - len(active)} outplanted")
 k[1].metric("Seed lots in stock", len(in_stock), help=f"{sum(x.get('stockKg') or 0 for x in in_stock):.1f} kg in total")
 k[2].metric(
@@ -165,12 +165,21 @@ with st.container(border=True):
     st.subheader("Needs attention", anchor=False)
     if not alerts:
         st.success("Nothing flagged from your records.", icon=":material/check_circle:")
+    titles = {
+        "app_pages/batches.py": "nursery batches",
+        "app_pages/audit.py": "calibration log",
+        "app_pages/environment.py": "environmental logs",
+        "app_pages/germination.py": "germination tracker",
+        "app_pages/treatments.py": "treatment logs",
+    }
     for level, text, page in alerts:
-        st.page_link(page, label=text, icon=":material/error:" if level == "critical" else ":material/warning:")
+        # Text in markdown wraps on phones; link labels would be cut off.
+        st.markdown(f"{':material/error:' if level == 'critical' else ':material/warning:'} {text}")
+        st.page_link(page, label=f"Open {titles[page]}", icon=":material/arrow_forward:")
 
 # --- Quick entry -----------------------------------------------------------
 st.subheader("Record", anchor=False)
-q = st.columns(4)
+q = row(4)
 q[0].page_link("app_pages/germination.py", label="Germination count", icon=":material/eco:")
 q[1].page_link("app_pages/environment.py", label="Climate reading", icon=":material/thermostat:")
 q[2].page_link("app_pages/morphometrics.py", label="Growth measurement", icon=":material/straighten:")
