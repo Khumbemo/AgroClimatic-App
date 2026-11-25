@@ -176,3 +176,52 @@ def hbar(labels: Sequence[str], values: Sequence[float], x_title: str, hover: st
     fig.update_xaxes(title=x_title, rangemode="tozero", gridcolor=_INK[mode()][2], showgrid=True)
     fig.update_yaxes(autorange="reversed", showgrid=False, title=None)
     return fig
+
+
+def site_map(units: Sequence[dict], width: float, length: float, height: int = 460) -> go.Figure:
+    """Survey layout to scale: quadrats as squares, points as dots, transect lines; hover shows the unit."""
+    primary, secondary, grid = _INK[mode()]
+    fig = go.Figure()
+    fig.add_shape(type="rect", x0=0, y0=0, x1=width, y1=length, line=dict(color=secondary, width=1.5))
+    quads = [u for u in units if u["kind"] == "quadrat"]
+    # nested quadrats share a corner, so the smaller ones show inside the larger
+    for u in quads:
+        fig.add_shape(
+            type="rect",
+            x0=u["x"],
+            y0=u["y"],
+            x1=u["x"] + u["w"],
+            y1=u["y"] + u["h"],
+            line=dict(color=series_color(0), width=1),
+            fillcolor=series_color(0),
+            opacity=0.35,
+        )
+    for u in (u for u in units if u["kind"] == "line"):
+        fig.add_shape(
+            type="line", x0=u["x"], y0=u["y"], x1=u["x"], y1=u["y"] + u["h"], line=dict(color=series_color(0), width=2)
+        )
+    hover = [u for u in units if u["kind"] != "line"] + [u for u in units if u["kind"] == "line"]
+    fig.add_trace(
+        go.Scatter(
+            x=[u["x"] + u["w"] / 2 for u in hover],
+            y=[u["y"] + (u["h"] / 2 if u["kind"] != "line" else 0) for u in hover],
+            mode="markers",
+            marker=dict(
+                size=[8 if u["kind"] == "point" else 6 for u in hover],
+                color=series_color(0),
+                opacity=[1 if u["kind"] == "point" else 0 for u in hover],
+            ),
+            text=[u["id"] for u in hover],
+            customdata=[[u["x"], u["y"], u["w"]] for u in hover],
+            hovertemplate="%{text}<br>x %{customdata[0]:.1f} m, y %{customdata[1]:.1f} m<extra></extra>",
+        )
+    )
+    fig = _layout(fig, "Length (m)", "Width (m)", height=height)
+    fig.update_layout(hovermode="closest")
+    fig.update_xaxes(
+        range=[-0.02 * width, 1.02 * width], showgrid=True, gridcolor=grid, zeroline=False, constrain="domain"
+    )
+    fig.update_yaxes(
+        range=[-0.02 * length, 1.02 * length], scaleanchor="x", scaleratio=1, zeroline=False, rangemode="normal"
+    )
+    return fig

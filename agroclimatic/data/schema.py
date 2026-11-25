@@ -333,6 +333,66 @@ class Greenhouse(Record):
     """Occupied bench positions only."""
 
 
+SURVEY_METHODS = (
+    "random_quadrats",
+    "systematic_quadrats",
+    "stratified_quadrats",
+    "belt_transect",
+    "nested_quadrats",
+    "pcq",
+    "line_intercept",
+    "point_intercept",
+)
+
+
+class SamplingUnit(BaseModel):
+    """A quadrat, point or line of a survey layout; metres from the site's south-west corner."""
+
+    model_config = ConfigDict(extra="ignore")
+    id: Required(20)
+    kind: Literal["quadrat", "point", "line"]
+    x: Num(0, 100_000)
+    y: Num(0, 100_000)
+    w: Num(0, 100_000)
+    h: Num(0, 100_000)
+    stratum: int | None = None
+    transect: int | None = None
+    location: int | None = None
+    size: int | None = None
+
+
+class SurveyObservation(BaseModel):
+    """One field record; which fields apply depends on the survey method."""
+
+    model_config = ConfigDict(extra="ignore")
+    unit: Required(20)
+    species: Required(120)
+    count: Num(0, 10_000_000) | None = None
+    basal_area_cm2: Num(0, 10_000_000) | None = None
+    quarter: Int(1, 4) | None = None
+    distance_m: Num(0.001, 10_000) | None = None
+    dbh_cm: Num(0.1, 2_000) | None = None
+    intercept_m: Num(0, 100_000) | None = None
+    hits: Int(0, 100_000) | None = None
+
+
+class Survey(Record):
+    """A field survey: sampling method, reproducible layout and the observations made on it."""
+
+    name: Required(120)
+    method: Literal[SURVEY_METHODS]
+    site: Text(200) = ""
+    date: IsoDate | None = None
+    widthM: Num(0.1, 100_000)
+    lengthM: Num(0.1, 100_000)
+    params: dict[str, float | list[float]] = {}
+    """Layout settings (quadrat size, counts, spacing, …) so the layout can be regenerated from the seed."""
+    seed: int
+    units: Annotated[list[SamplingUnit], Field(min_length=1)]
+    observations: list[SurveyObservation] = []
+    notes: Text(1000) = ""
+
+
 # ---------------------------------------------------------------------------
 # Collection registry
 # ---------------------------------------------------------------------------
@@ -356,6 +416,7 @@ SCHEMAS: dict[str, type[Record]] = {
     "experiments": Experiment,
     "trialVariables": TrialVariable,
     "greenhouses": Greenhouse,
+    "surveys": Survey,
 }
 COLLECTIONS = tuple(SCHEMAS)
 

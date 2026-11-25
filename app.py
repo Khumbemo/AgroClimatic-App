@@ -27,6 +27,8 @@ pages = {
         st.Page(P + "spatial.py", title="Spatial mapping", icon=":material/grid_view:"),
     ],
     "Research & QA": [
+        st.Page(P + "method_guide.py", title="Method guide", icon=":material/alt_route:"),
+        st.Page(P + "surveys.py", title="Field surveys", icon=":material/grid_on:"),
         st.Page(P + "experiments.py", title="Experimental design", icon=":material/experiment:"),
         st.Page(P + "substrate.py", title="Substrate & nutrients", icon=":material/compost:"),
         st.Page(P + "provenance.py", title="Provenance & lineage", icon=":material/location_on:"),

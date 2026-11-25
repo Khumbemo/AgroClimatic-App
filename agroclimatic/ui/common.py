@@ -231,6 +231,33 @@ def record_table(
         st.caption("Select rows to delete them. Use the table toolbar to search or download CSV.")
 
 
+def observations_from_table(df: pd.DataFrame, columns: dict[str, str]) -> tuple[list[dict], int]:
+    """
+    Rows of an edited data table → (observation dicts keyed by field name, number of rows skipped).
+    Rows without a species are skipped (and counted when they hold other values), empty cells are
+    left out, numpy scalars become plain Python values and whole-number fields (quarter, hits)
+    become ints, so the records validate and serialise cleanly.
+    """
+    records, skipped = [], 0
+    for _, r in df.iterrows():
+        rec = {}
+        for col, field in columns.items():
+            v = r[col]
+            if v is None or (not isinstance(v, str) and pd.isna(v)):
+                continue
+            v = v.item() if hasattr(v, "item") else v
+            if isinstance(v, str):
+                v = v.strip()
+                if not v:
+                    continue
+            rec[field] = int(v) if field in ("quarter", "hits") else v
+        if rec.get("species"):
+            records.append(rec)
+        elif any(k != "unit" for k in rec):
+            skipped += 1
+    return records, skipped
+
+
 def by_date_desc(rows: Iterable[dict], field: str = "date") -> list[dict]:
     return sorted(rows, key=lambda r: (r.get(field) or "", r.get("createdAt", "")), reverse=True)
 
