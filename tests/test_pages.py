@@ -101,3 +101,33 @@ def test_new_trial_variable_is_selected_after_saving():
     assert chosen.value != "New variable"
     assert "Root-collar diameter" in chosen.format_func(chosen.value)
     assert any("Enter values for more plots" in i.value for i in at.info)  # no values entered yet
+
+
+def test_example_survey_shows_ivi_and_diversity():
+    at = run("app_pages/surveys.py")
+    assert not at.exception, [e.value for e in at.exception]
+    text = " ".join(m.value for m in at.markdown)
+    assert "Importance Value Index" in text and "Phytosociological attributes" in text
+    assert any(m.label == "Shannon H′" for m in at.metric)
+
+
+def test_every_survey_method_can_be_created_from_the_page():
+    from agroclimatic.science.sampling import METHODS
+
+    for method in METHODS:
+        at = run("app_pages/surveys.py")
+        at.selectbox(key="survey-method").set_value(method).run()
+        at.text_input(key="sv-name").set_value(f"Test {method}")
+        next(b for b in at.button if b.label == "Create layout").click().run()
+        assert not at.exception, (method, [e.value for e in at.exception])
+        assert not at.error, (method, [e.value for e in at.error])
+        assert at.subheader[0].value == f"Test {method}"
+
+
+def test_method_guide_hands_the_choice_to_the_survey_page():
+    at = run("app_pages/method_guide.py")
+    at.radio(key="mg-objective").set_value("trees").run()
+    assert any("Point-centred quarter" in h.value for h in at.subheader)
+    next(b for b in at.button if b.label == "Set up this survey").click().run()
+    assert not at.exception
+    assert at.session_state["survey-method"] == "pcq"

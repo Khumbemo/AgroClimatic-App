@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import math
 from datetime import date, timedelta
 
+from ..science.sampling import build_layout
 from ..science.trial_design import generate_layout, seeded_random
 from .store import Store
 
@@ -179,6 +181,45 @@ def example_trial() -> tuple[dict, dict]:
     return experiment, variable
 
 
+def example_survey() -> dict:
+    """
+    Example tree survey: ten random 10 × 10 m quadrats in a 1 ha chir pine–oak stand, with
+    simulated counts and basal areas (labelled as an example in the app).
+    """
+    params = {"size": 10.0, "n": 10.0}
+    units = build_layout("random_quadrats", 100, 100, params, 4242)
+    # species, mean stems per quadrat, typical DBH (cm)
+    stand = [
+        ("Pinus roxburghii", 4.0, 32.0),
+        ("Quercus leucotrichophora", 2.5, 24.0),
+        ("Rhododendron arboreum", 1.5, 18.0),
+        ("Myrica esculenta", 0.8, 14.0),
+        ("Pyrus pashia", 0.4, 12.0),
+    ]
+    rand = seeded_random(99)
+    rows = []
+    for u in units:
+        for species, mean, dbh in stand:
+            count = int(mean * 2 * rand())  # 0 .. 2 × mean, so means match `stand` on average
+            if count:
+                ba = sum(math.pi * (dbh * (0.7 + 0.6 * rand()) / 2) ** 2 for _ in range(count))
+                rows.append({"unit": u["id"], "species": species, "count": count, "basal_area_cm2": round(ba, 1)})
+    return {
+        "id": "ex-survey-1",
+        "name": "Chir pine–oak stand (example)",
+        "method": "random_quadrats",
+        "site": "Example compartment",
+        "date": "2024-05-15",
+        "widthM": 100,
+        "lengthM": 100,
+        "params": params,
+        "seed": 4242,
+        "units": units,
+        "observations": rows,
+        **_EX,
+    }
+
+
 def seed_once(store: Store, examples: bool, today: date | None = None) -> None:
     """Add reference species once; example records go only into an empty database."""
     if store.get_meta(SEEDED_KEY):
@@ -216,6 +257,8 @@ def load_examples(store: Store, today: date | None = None) -> None:
         experiment, variable = example_trial()
         store.put("experiments", experiment)
         store.put("trialVariables", variable)
+    if store.count("surveys") == 0:
+        store.put("surveys", example_survey())
 
 
 def remove_examples(store: Store) -> int:

@@ -38,7 +38,11 @@ def plots_of(exp):
 # New experiment
 # ---------------------------------------------------------------------------
 
-with st.expander("New experiment", icon=":material/add:", expanded=not s.count("experiments")):
+with st.expander(
+    "New experiment",
+    icon=":material/add:",
+    expanded=st.session_state.pop("exp-open", False) or not s.count("experiments"),
+):
     if ai_enabled():
         c = st.columns([4, 1], vertical_alignment="bottom")
         prompt = c[0].text_input(
