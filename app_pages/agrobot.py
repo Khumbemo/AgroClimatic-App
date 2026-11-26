@@ -31,15 +31,21 @@ for m in messages:
         # Markdown is rendered without HTML, so model or record text cannot inject markup.
         st.markdown(m["content"])
 
-pending = None
-if not messages:
+
+def ask(q: str) -> None:
+    st.session_state["_starter"] = q
+
+
+# The chat box is pinned to the bottom wherever it is called; reading it (and any clicked
+# suggestion, set by its callback before this run) first lets the suggestions disappear as soon
+# as a question is asked.
+prompt = st.chat_input("Ask about your batches, seed lots or nursery science")
+question = prompt or st.session_state.pop("_starter", None)
+if not messages and not question:
     st.caption("Try one of these:")
     with st.container(horizontal=True, gap="small"):  # wraps on narrow screens
         for i, q in enumerate(STARTERS):
-            if st.button(q, key=f"starter-{i}"):
-                pending = q
-prompt = st.chat_input("Ask about your batches, seed lots or nursery science")
-question = prompt or pending
+            st.button(q, key=f"starter-{i}", on_click=ask, args=(q,))
 
 if question:
     messages.append({"role": "user", "content": question})

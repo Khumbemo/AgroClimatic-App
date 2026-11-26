@@ -8,6 +8,7 @@ from agroclimatic.data.backup import export_backup, restore_backup
 from agroclimatic.data.schema import COLLECTIONS
 from agroclimatic.data.seed import load_examples, remove_examples
 from agroclimatic.services.ai import ai_enabled, model
+from agroclimatic.ui.auth import password_enabled, sign_out
 from agroclimatic.ui.common import flash, header, store
 
 s = store()
@@ -80,6 +81,12 @@ st.write(
 
 st.subheader("Appearance", anchor=False)
 st.write("Light and dark themes: open the ⋮ menu (top right) → Settings → Theme.")
+
+if password_enabled():
+    st.subheader("Sign-in", anchor=False)
+    st.write("This browser stays signed in for 30 days. Sign out on shared or public computers.")
+    if st.button("Sign out", icon=":material/logout:"):
+        sign_out()
 
 st.subheader("About", anchor=False)
 st.caption(f"AgroClimatic {__version__} · Python / Streamlit · units: SI (°C, kPa, mS cm⁻¹, mm, cm, g).")

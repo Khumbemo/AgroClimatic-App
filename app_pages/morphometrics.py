@@ -33,6 +33,8 @@ if not idx.batches:
 
 recent = by_date_desc(items)
 default = recent[0].get("batchId") if recent else None
+if "_morph_show" in st.session_state:  # after saving, show the batch that was measured
+    st.session_state["morph-batch"] = st.session_state.pop("_morph_show")
 batch_id = idx.select("Batch", "morph-batch", value=st.session_state.get("morph-batch", default))
 rows = by_date_desc(g for g in items if not batch_id or g.get("batchId") == batch_id)
 series = list(reversed(rows))
@@ -91,11 +93,15 @@ elif not batch_id and rows:
 
 with st.expander("New measurement", icon=":material/add:", expanded=not items):
     with st.form("growth", clear_on_submit=True):
-        c = row(3)
-        with c[0]:
-            b = idx.select("Batch", "growth-batch", value=batch_id)
-        d = c[1].date_input("Date", today(), format="YYYY-MM-DD")
-        n = c[2].number_input("Sample size (n)", min_value=1, step=1, value=30)
+        # The form records against the batch chosen at the top of the page, so the two cannot differ.
+        if batch_id:
+            b = batch_id
+            st.markdown(f"Recording for **{idx.label(batch_id)}** · change the batch at the top of the page")
+        else:
+            b = idx.select("Batch", "growth-batch")
+        c = row(2)
+        d = c[0].date_input("Date", today(), format="YYYY-MM-DD")
+        n = c[1].number_input("Sample size (n)", min_value=1, step=1, value=30)
         st.markdown("**Non-destructive (means per seedling)**")
         c = row(5)
         h = c[0].number_input("Height (cm)", min_value=0.0, step=0.1, value=None, placeholder="15.2")
@@ -136,6 +142,7 @@ with st.expander("New measurement", icon=":material/add:", expanded=not items):
                 ),
                 "Measurement saved",
             ):
+                st.session_state["_morph_show"] = b
                 st.rerun()
 
 record_table(

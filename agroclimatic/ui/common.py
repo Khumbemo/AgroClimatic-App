@@ -117,6 +117,12 @@ class BatchIndex:
             suffix = " (needs review)" if self.by_id[bid].get("needsReview") else ""
             return self.label(bid) + suffix
 
+        if key in st.session_state:
+            if st.session_state[key] in options:
+                # value already held (by the widget, or set by the page, e.g. after saving): passing a
+                # default as well would make Streamlit warn and could override it
+                return st.selectbox(label, options, format_func=name, key=key)
+            del st.session_state[key]  # the batch it pointed to was deleted
         return st.selectbox(label, options, index=index, format_func=name, key=key)
 
 

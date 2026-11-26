@@ -148,3 +148,40 @@ def test_design_chosen_in_the_guide_opens_without_widget_warnings(monkeypatch):
     assert at.title[0].value == "Experimental design"
     assert at.selectbox(key="exp-design").value == "Latin_Square"
     assert not [w for w in warnings if "created with a default value" in w]
+
+
+def test_measurement_is_saved_to_the_batch_chosen_at_the_top_of_the_page():
+    import os
+
+    from agroclimatic.data.store import Store
+
+    at = run("app_pages/morphometrics.py")
+    at.selectbox(key="morph-batch").set_value("ex-nb-2024-002").run()
+    assert "growth-batch" not in [s.key for s in at.selectbox]  # no second batch box to disagree
+    heights = [n for n in at.number_input if n.label == "Height (cm)"][0]
+    rcd = [n for n in at.number_input if n.label == "Root-collar Ø (mm)"][0]
+    heights.set_value(6.5)
+    rcd.set_value(1.4)
+    next(b for b in at.button if b.label == "Save measurement").click().run()
+    assert not at.exception and not at.error, [e.value for e in at.error]
+    saved = [g for g in Store(os.environ["AGROCLIMATIC_DB"]).list("growthMeasurements") if g["avgHeightCm"] == 6.5]
+    assert [g["batchId"] for g in saved] == ["ex-nb-2024-002"]
+    assert at.selectbox(key="morph-batch").value == "ex-nb-2024-002"
+
+
+def test_new_experiment_is_shown_after_creating_it():
+    at = run("app_pages/experiments.py")
+    at.text_input(key="exp-name").set_value("Fresh trial")
+    at.text_area(key="exp-treatments").set_value("A\nB\nC")
+    next(b for b in at.button if b.label == "Create and randomise").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert at.subheader[0].value == "Fresh trial"
+
+
+def test_agrobot_suggestions_disappear_once_a_question_is_asked():
+    at = run("app_pages/agrobot.py")
+    assert any(b.label == "Seed lot SL-001" for b in at.button)
+    next(b for b in at.button if b.label == "Seed lot SL-001").click().run()
+    assert not at.exception
+    assert any("Seed lot SL-001" in m.value for m in at.markdown)  # answered
+    assert not any(b.label.startswith("Seed lot SL-001") for b in at.button)  # suggestions gone
