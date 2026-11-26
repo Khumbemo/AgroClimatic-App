@@ -131,3 +131,20 @@ def test_method_guide_hands_the_choice_to_the_survey_page():
     next(b for b in at.button if b.label == "Set up this survey").click().run()
     assert not at.exception
     assert at.session_state["survey-method"] == "pcq"
+
+
+def test_design_chosen_in_the_guide_opens_without_widget_warnings(monkeypatch):
+    """Guide → "Set up this experiment" → the form shows that design, with no widget-state warning."""
+    from streamlit.elements.lib import policies
+
+    warnings: list[str] = []
+    monkeypatch.setattr(policies, "_shown_default_value_warning", False)  # Streamlit warns once per process
+    monkeypatch.setattr(policies._LOGGER, "warning", lambda msg, *args, **kw: warnings.append(msg % args))
+    at = run("app_pages/method_guide.py")
+    at.radio(key="mg-objective").set_value("compare").run()
+    at.selectbox[0].set_value(2).run()  # two crossing gradients → Latin square
+    next(b for b in at.button if b.label == "Set up this experiment").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert at.title[0].value == "Experimental design"
+    assert at.selectbox(key="exp-design").value == "Latin_Square"
+    assert not [w for w in warnings if "created with a default value" in w]

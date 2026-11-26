@@ -64,7 +64,10 @@ with st.expander(
                     st.error(f"Suggestion failed: {e}")
         st.caption("Check the suggestion before creating the layout.")
     name = st.text_input("Experiment name", placeholder="Substrate × nitrogen trial 2026", key="exp-name")
-    design = st.selectbox("Design", DESIGN_TYPES, format_func=DESIGN_LABELS.get, index=1, key="exp-design")
+    # Default RCBD; the method guide may have chosen another design. Setting it here (not with
+    # `index=`) gives the widget one source of its value.
+    st.session_state.setdefault("exp-design", "RCBD")
+    design = st.selectbox("Design", DESIGN_TYPES, format_func=DESIGN_LABELS.get, key="exp-design")
     c = row(2)
     treatments_text = c[0].text_area(
         "Main-plot levels" if design == "Split_Plot" else "Treatments",
@@ -86,13 +89,13 @@ with st.expander(
         )
         reps = len(treatments)
     else:
+        st.session_state.setdefault("exp-reps", 4)  # the AI suggestion may set it
         reps = int(
             st.number_input(
                 "Replicates per treatment" if design == "CRD" else "Blocks (replicates)",
                 min_value=2,
                 max_value=100,
                 step=1,
-                value=4,
                 key="exp-reps",
             )
         )

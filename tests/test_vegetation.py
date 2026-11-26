@@ -132,7 +132,7 @@ def test_species_area_is_cumulative_within_each_location():
         {"unit": "L2-S3", "species": "D"},
     ]
     curve = species_area(units, rows)
-    assert [round(a, 2) for a, _, _ in curve] == [1, 1.99, 4]
+    assert [a for a, _, _ in curve] == [1, 2, 4]  # nominal areas, not 1.41² = 1.99
     assert [m for _, m, _ in curve] == [1.5, 2, 3]
 
 
@@ -295,3 +295,79 @@ def test_build_layout_reproduces_every_method_from_its_settings():
         a = smp.build_layout(method, 100, 120, p, seed=42)
         assert a and a == smp.build_layout(method, 100, 120, p, seed=42)
         assert all(0 <= u["x"] <= 100 and 0 <= u["y"] <= 120 for u in a)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for the issues found in the November 2026 review
+# ---------------------------------------------------------------------------
+
+
+def test_site_map_scales_linearly_with_the_number_of_quadrats():
+    import time
+
+    from agroclimatic.ui import charts
+
+    units = smp.systematic_quadrats(1000, 1000, 1, 22, seed=1)  # 2,070 quadrats
+    t = time.perf_counter()
+    fig = charts.site_map(units, 1000, 1000)
+    assert time.perf_counter() - t < 2  # was about 90 s for 1,000 quadrats with one shape each
+    assert len(fig.layout.shapes) == 1  # only the site boundary; quadrats are one trace
+
+
+def test_layouts_above_the_unit_limit_are_refused_with_advice():
+    with pytest.raises(smp.LayoutError, match="limit is 2,000.*wider spacing"):
+        smp.build_layout("systematic_quadrats", 1000, 1000, {"size": 1, "spacing": 5}, 1)
+
+
+def test_layout_messages_name_the_real_problem():
+    with pytest.raises(smp.LayoutError, match="largest quadrats .* at 2 locations"):
+        smp.build_layout("nested_quadrats", 10, 10, {"smallest": 2, "count": 5, "locations": 2}, 1)
+    with pytest.raises(smp.LayoutError, match="^Use at least one transect.$"):
+        smp.build_layout("line_intercept", 100, 100, {"transects": 0}, 1)
+    with pytest.raises(smp.LayoutError, match="distance between points"):
+        smp.build_layout("pcq", 100, 100, {"transects": 2, "interval": 500}, 1)
+
+
+def test_species_names_ignore_spacing_and_case_variants_are_reported():
+    from agroclimatic.science.vegetation import case_variants
+
+    rows = [
+        {"unit": "Q1", "species": "Pinus roxburghii", "count": 3},
+        {"unit": "Q2", "species": " Pinus  roxburghii ", "count": 2},
+        {"unit": "Q3", "species": "pinus roxburghii", "count": 1},
+    ]
+    r = analyse_quadrats(UNITS, rows)
+    assert sorted(s.species for s in r.species) == ["Pinus roxburghii", "pinus roxburghii"]
+    assert by_species(r)["Pinus roxburghii"].individuals == 5
+    assert case_variants(x["species"] for x in rows) == [["Pinus roxburghii", "pinus roxburghii"]]
+
+
+def test_counts_must_be_whole_numbers():
+    from agroclimatic.data.schema import RecordInvalid, validate
+
+    survey = {
+        "id": "s",
+        "createdAt": "t",
+        "updatedAt": "t",
+        "name": "x",
+        "method": "random_quadrats",
+        "widthM": 10,
+        "lengthM": 10,
+        "seed": 1,
+        "units": UNITS,
+    }
+    assert (
+        validate("surveys", dict(survey, observations=[{"unit": "Q1", "species": "A", "count": 3.0}]))["observations"][
+            0
+        ]["count"]
+        == 3
+    )
+    with pytest.raises(RecordInvalid, match="whole number"):
+        validate("surveys", dict(survey, observations=[{"unit": "Q1", "species": "A", "count": 2.5}]))
+
+
+def test_bar_chart_leaves_room_for_the_longest_value_label():
+    from agroclimatic.ui import charts
+
+    fig = charts.hbar(["a", "b"], [104.5, 40], "IVI")
+    assert fig.layout.xaxis.range[1] >= 104.5 * 1.15

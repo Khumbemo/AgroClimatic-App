@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 
+from agroclimatic.data.schema import RecordInvalid
 from agroclimatic.science import vegetation as veg
 from agroclimatic.science.sampling import METHODS, QUADRAT_METHODS, LayoutError, build_layout, doubling_sizes
 from agroclimatic.science.trial_design import new_seed
@@ -233,7 +234,10 @@ with data_tab:
     config = {list(cols)[0]: st.column_config.SelectboxColumn(options=unit_ids, required=True)}
     for col, field in cols.items():
         if field in numeric:
-            config[col] = st.column_config.NumberColumn(min_value=0, step=1 if field in ("count", "hits") else 0.01)
+            whole = field in ("count", "hits")
+            config[col] = st.column_config.NumberColumn(
+                min_value=0, step=1 if whole else 0.01, format="%d" if whole else None
+            )
     if "Quarter" in cols:
         config["Quarter"] = st.column_config.SelectboxColumn(options=[1, 2, 3, 4], required=True)
     known = sorted(
@@ -248,12 +252,33 @@ with data_tab:
     )
     if st.button("Save field data", type="primary", key=f"save-{sid}"):
         records, skipped = observations_from_table(edited, cols)
-        if save(lambda: s.update("surveys", sid, {"observations": records}), "Field data saved"):
+        heading = {field: col for col, field in cols.items()}
+        try:
+            s.update("surveys", sid, {"observations": records})
+        except RecordInvalid as e:
+            # "observations.3.count" → "Row 4, Count" (rows as in the table, blank rows excluded)
+            lines = []
+            for path, msg in e.issues:
+                parts = path.split(".")
+                if len(parts) == 3 and parts[0] == "observations" and parts[1].isdigit():
+                    lines.append(f"- **Row {int(parts[1]) + 1}, {heading.get(parts[2], parts[2])}**: {msg}")
+                else:
+                    lines.append(f"- **{path or 'Record'}**: {msg}")
+            st.error("Not saved. Please correct:\n" + "\n".join(lines))
+        else:
             flash(
                 f"Saved {len(records)} records."
                 + (f" {skipped} row{'s' if skipped > 1 else ''} without a species were not saved." if skipped else "")
             )
             st.rerun()
+    variants = veg.case_variants(o["species"] for o in sv["observations"])
+    if variants:
+        st.warning(
+            "These names differ only in capital letters and are counted as different species: "
+            + "; ".join(" / ".join(g) for g in variants)
+            + ". Correct them in the table if they are the same species.",
+            icon=":material/warning:",
+        )
 
 # ---------------------------------------------------------------------------
 # Analysis
@@ -288,6 +313,11 @@ def accumulation_chart(curve: list[float], unit_word: str) -> None:
 
 
 with analysis_tab:
+    if variants:
+        st.warning(
+            "Some species names differ only in capital letters and are analysed as separate species (see Field data).",
+            icon=":material/warning:",
+        )
     try:
         if m in QUADRAT_METHODS:
             r = veg.analyse_quadrats(units, sv["observations"])

@@ -247,7 +247,7 @@ def observations_from_table(df: pd.DataFrame, columns: dict[str, str]) -> tuple[
                 continue
             v = v.item() if hasattr(v, "item") else v
             if isinstance(v, str):
-                v = v.strip()
+                v = " ".join(v.split())  # trim and collapse repeated spaces
                 if not v:
                     continue
             rec[field] = int(v) if field in ("quarter", "hits") else v

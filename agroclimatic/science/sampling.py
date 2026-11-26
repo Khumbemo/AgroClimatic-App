@@ -27,6 +27,9 @@ METHODS: dict[str, str] = {
     "point_intercept": "Point intercept",
 }
 
+MAX_UNITS = 2000
+"""Largest layout accepted: more units than a field team can visit, and slow to enter and review."""
+
 QUADRAT_METHODS = {"random_quadrats", "systematic_quadrats", "stratified_quadrats", "belt_transect"}
 
 
@@ -140,6 +143,17 @@ def nested_quadrats(width: float, length: float, sizes: list[float], locations: 
     if len(sizes) < 3:
         raise LayoutError("Give at least three quadrat sizes.")
     big = sizes[-1]
+    if locations < 1:
+        raise LayoutError("Use at least one location.")
+    if big > min(width, length):
+        raise LayoutError(
+            f"The largest quadrat ({big:g} m side) does not fit in the site; use fewer sizes or a smaller first quadrat."
+        )
+    if locations * big * big > 0.5 * width * length:
+        raise LayoutError(
+            f"The largest quadrats ({big:g} m side) at {locations} locations would cover more than half the site; "
+            "use fewer sizes, a smaller first quadrat or fewer locations."
+        )
     corners = random_quadrats(width, length, big, locations, seed)
     units = []
     for loc, c in enumerate(corners, 1):
@@ -172,8 +186,10 @@ def transect_points(
     (PCQ sampling points or point-intercept points); `kind="line"` returns the transect lines.
     """
     _check_site(width, length)
-    if transects < 1 or interval <= 0 or interval > length:
-        raise LayoutError("Use at least one transect and an interval shorter than the site.")
+    if transects < 1:
+        raise LayoutError("Use at least one transect.")
+    if kind != "line" and not 0 < interval <= length:
+        raise LayoutError("The distance between points must be greater than zero and no longer than the site.")
     spacing = width / transects
     rand = seeded_random(seed)
     x0 = rand() * spacing
@@ -210,6 +226,16 @@ def unit_area(unit: dict) -> float:
 
 def build_layout(method: str, width: float, length: float, params: dict, seed: int) -> list[dict]:
     """Generate the layout for a survey method from its stored settings (see `METHODS`)."""
+    units = _build(method, width, length, params, seed)
+    if len(units) > MAX_UNITS:
+        raise LayoutError(
+            f"That layout has {len(units):,} sampling units; the limit is {MAX_UNITS:,}. "
+            "Use wider spacing, larger quadrats, fewer transects or a smaller site."
+        )
+    return units
+
+
+def _build(method: str, width: float, length: float, params: dict, seed: int) -> list[dict]:
     p = params
     if method == "random_quadrats":
         return random_quadrats(width, length, p["size"], int(p["n"]), seed)
