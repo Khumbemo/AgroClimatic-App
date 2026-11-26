@@ -41,7 +41,7 @@ Environment variables, or `.streamlit/secrets.toml` (template: `.streamlit/secre
 |---|---|
 | `AGROCLIMATIC_DB` | Database file (default `data/agroclimatic.db`) |
 | `AGROCLIMATIC_EXAMPLES` | `0` to skip example records on first start |
-| `APP_PASSWORD` | Optional shared password for the whole app |
+| `APP_PASSWORD` | Optional shared password for the whole app. A browser stays signed in for 30 days (signed cookie; changing the password signs everyone out); Settings has a Sign out button |
 | `GEMINI_API_KEY` | Optional. Enables AgroBot open questions, AI trial-design suggestions and germination interpretation. Calls are made from the server, so the key is not sent to browsers |
 | `GEMINI_MODEL` | Default `gemini-flash-latest` |
 

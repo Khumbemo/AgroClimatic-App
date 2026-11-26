@@ -112,26 +112,30 @@ with st.expander(
         else:
             seed = new_seed()
             sub = subs if design == "Split_Plot" else None
+            created = {}
             if save(
-                lambda: s.add(
-                    "experiments",
-                    {
-                        "name": name,
-                        "designType": design,
-                        "treatments": treatments,
-                        "subTreatments": sub,
-                        "replicates": reps,
-                        "blocks": 1 if design == "CRD" else reps,
-                        "assignments": generate_layout(design, treatments, reps, seed, sub or ()),
-                        "blindMode": blind,
-                        "seed": seed,
-                        "layoutVersion": 2,
-                    },
+                lambda: created.update(
+                    s.add(
+                        "experiments",
+                        {
+                            "name": name,
+                            "designType": design,
+                            "treatments": treatments,
+                            "subTreatments": sub,
+                            "replicates": reps,
+                            "blocks": 1 if design == "CRD" else reps,
+                            "assignments": generate_layout(design, treatments, reps, seed, sub or ()),
+                            "blindMode": blind,
+                            "seed": seed,
+                            "layoutVersion": 2,
+                        },
+                    )
                 ),
                 "Experiment created",
             ):
                 for k in ("exp-name", "exp-treatments", "exp-sub"):
                     st.session_state.pop(k, None)
+                st.session_state["exp-pick"] = created["id"]  # show the new experiment
                 st.rerun()
 
 
@@ -302,6 +306,8 @@ if not experiments:
     st.stop()
 
 ids = [e["id"] for e in experiments]
+if st.session_state.get("exp-pick") not in ids:
+    st.session_state.pop("exp-pick", None)  # its experiment was deleted
 exp_id = st.selectbox(
     "Experiment", ids, format_func=lambda i: next(e["name"] for e in experiments if e["id"] == i), key="exp-pick"
 )
