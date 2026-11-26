@@ -367,7 +367,8 @@ class SurveyObservation(BaseModel):
     model_config = ConfigDict(extra="ignore")
     unit: Required(20)
     species: Required(120)
-    count: Num(0, 10_000_000) | None = None
+    count: Int(0, 10_000_000) | None = None
+    """Number of individuals: a whole number (record cover or biomass in their own fields)."""
     basal_area_cm2: Num(0, 10_000_000) | None = None
     quarter: Int(1, 4) | None = None
     distance_m: Num(0.001, 10_000) | None = None

@@ -33,6 +33,25 @@ class SurveyError(ValueError):
     """The data cannot be analysed as entered; the message says what is missing."""
 
 
+def species_name(value) -> str:
+    """Species name with surrounding and repeated spaces removed, so "Pinus  roxburghii " = "Pinus roxburghii"."""
+    return " ".join(str(value or "").split())
+
+
+def case_variants(names) -> list[list[str]]:
+    """
+    Groups of species names that differ only in capitals (e.g. "Pinus roxburghii", "pinus roxburghii").
+    They are analysed as separate species, so the user is asked to correct them rather than having
+    them merged silently.
+    """
+    groups: dict[str, set[str]] = defaultdict(set)
+    for n in names:
+        name = species_name(n)
+        if name:
+            groups[name.casefold()].add(name)
+    return [sorted(g) for g in groups.values() if len(g) > 1]
+
+
 def basal_area_m2(dbh_cm: float) -> float:
     """Stem basal area (m²) from diameter at breast height (cm): π (d/200)²."""
     return math.pi * (dbh_cm / 200.0) ** 2
@@ -248,7 +267,7 @@ def analyse_quadrats(units: Sequence[dict], rows: Sequence[dict]) -> QuadratResu
     ba: dict[str, float] = defaultdict(float)
     ba_given: dict[str, bool] = defaultdict(bool)
     for r in rows:
-        sp = str(r.get("species") or "").strip()
+        sp = species_name(r.get("species"))
         c = float(r.get("count") or 0)
         if not sp or c < 0:
             continue
@@ -323,6 +342,15 @@ def analyse_quadrats(units: Sequence[dict], rows: Sequence[dict]) -> QuadratResu
 # ---------------------------------------------------------------------------
 
 
+def _nominal_areas(areas: list[float]) -> list[float]:
+    """
+    Doubling series are laid out with sides rounded to the centimetre (√2 m → 1.41 m, area 1.99 m²);
+    report the intended areas (first area × 2ᵏ) when every actual area is within 2 % of them.
+    """
+    nominal = [areas[0] * 2**k for k in range(len(areas))]
+    return nominal if all(abs(a - n) <= 0.02 * n for a, n in zip(areas, nominal, strict=True)) else areas
+
+
 def species_area(units: Sequence[dict], rows: Sequence[dict]) -> list[tuple[float, float, float]]:
     """
     Mean cumulative species count at each nested quadrat size: [(area m², mean S, SD of S)].
@@ -333,15 +361,15 @@ def species_area(units: Sequence[dict], rows: Sequence[dict]) -> list[tuple[floa
         by_loc[u["location"]].append(u)
     seen: dict[str, set[str]] = defaultdict(set)
     for r in rows:
-        if str(r.get("species") or "").strip():
-            seen[r["unit"]].add(str(r["species"]).strip())
+        if species_name(r.get("species")):
+            seen[r["unit"]].add(species_name(r["species"]))
     if not seen:
         raise SurveyError("Record the species found in each quadrat size.")
     curves: list[list[int]] = []
     areas: list[float] = []
     for _, us in sorted(by_loc.items()):
         us = sorted(us, key=lambda u: u["size"])
-        areas = [u["w"] * u["h"] for u in us]
+        areas = _nominal_areas([u["w"] * u["h"] for u in us])
         acc: set[str] = set()
         curve = []
         for u in us:
@@ -397,7 +425,7 @@ def analyse_pcq(rows: Sequence[dict], level: float = 0.95) -> PcqResult:
     """
     pts: dict[str, dict[int, dict]] = defaultdict(dict)
     for r in rows:
-        if r.get("distance_m") in (None, "") or not str(r.get("species") or "").strip():
+        if r.get("distance_m") in (None, "") or not species_name(r.get("species")):
             continue
         q = int(r["quarter"])
         if q not in (1, 2, 3, 4):
@@ -424,10 +452,10 @@ def analyse_pcq(rows: Sequence[dict], level: float = 0.95) -> PcqResult:
     r_bar = sum(d) / len(d)
     by_sp: dict[str, list[dict]] = defaultdict(list)
     for r in trees:
-        by_sp[str(r["species"]).strip()].append(r)
+        by_sp[species_name(r["species"])].append(r)
     use_ba = all(r.get("dbh_cm") not in (None, "") and float(r["dbh_cm"]) > 0 for r in trees)
     freq = {
-        sp: sum(1 for qs in pts.values() if any(str(t["species"]).strip() == sp for t in qs.values())) / n * 100
+        sp: sum(1 for qs in pts.values() if any(species_name(t["species"]) == sp for t in qs.values())) / n * 100
         for sp in by_sp
     }
     tot_f = sum(freq.values())
@@ -445,7 +473,7 @@ def analyse_pcq(rows: Sequence[dict], level: float = 0.95) -> PcqResult:
         rdo = dom[sp] / tot_dom * 100 if use_ba else None
         out.append(PcqSpecies(sp, len(ts), rd, dens[sp], freq[sp], rf, dom.get(sp), rdo, rd + rf + (rdo or 0.0)))
     out.sort(key=lambda s: -s.ivi)
-    incidence = [{str(t["species"]).strip() for t in qs.values()} for qs in pts.values()]
+    incidence = [{species_name(t["species"]) for t in qs.values()} for qs in pts.values()]
     return PcqResult(
         points=n,
         mean_distance_m=r_bar,
@@ -482,7 +510,7 @@ def line_intercept(lines: Sequence[dict], rows: Sequence[dict]) -> list[CoverRow
     length = {u["id"]: float(u["h"]) for u in lines}
     per: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for r in rows:
-        sp = str(r.get("species") or "").strip()
+        sp = species_name(r.get("species"))
         if not sp or r.get("intercept_m") in (None, ""):
             continue
         if r["unit"] not in length:
@@ -507,7 +535,7 @@ def point_intercept(lines: Sequence[dict], rows: Sequence[dict], points_per_line
     ids = {u["id"] for u in lines}
     per: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for r in rows:
-        sp = str(r.get("species") or "").strip()
+        sp = species_name(r.get("species"))
         if not sp or r.get("hits") in (None, ""):
             continue
         if r["unit"] not in ids:

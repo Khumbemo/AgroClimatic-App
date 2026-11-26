@@ -173,7 +173,9 @@ def hbar(labels: Sequence[str], values: Sequence[float], x_title: str, hover: st
     )
     fig = _layout(fig, "", height=max(160, 44 * len(labels) + 40))
     fig.update_layout(hovermode="closest")
-    fig.update_xaxes(title=x_title, rangemode="tozero", gridcolor=_INK[mode()][2], showgrid=True)
+    top = max(values, default=0)
+    # 15 % headroom so the value label after the longest bar is not cut off on narrow screens
+    fig.update_xaxes(title=x_title, range=[0, top * 1.15 if top > 0 else 1], gridcolor=_INK[mode()][2], showgrid=True)
     fig.update_yaxes(autorange="reversed", showgrid=False, title=None)
     return fig
 
@@ -183,23 +185,36 @@ def site_map(units: Sequence[dict], width: float, length: float, height: int = 4
     primary, secondary, grid = _INK[mode()]
     fig = go.Figure()
     fig.add_shape(type="rect", x0=0, y0=0, x1=width, y1=length, line=dict(color=secondary, width=1.5))
-    quads = [u for u in units if u["kind"] == "quadrat"]
-    # nested quadrats share a corner, so the smaller ones show inside the larger
-    for u in quads:
-        fig.add_shape(
-            type="rect",
-            x0=u["x"],
-            y0=u["y"],
-            x1=u["x"] + u["w"],
-            y1=u["y"] + u["h"],
-            line=dict(color=series_color(0), width=1),
-            fillcolor=series_color(0),
-            opacity=0.35,
+    # All quadrats go in one filled trace (outlines separated by gaps) and all lines in another, so
+    # drawing time grows linearly with the number of units; one Plotly shape per quadrat grows
+    # quadratically (about 90 s for 1,000 quadrats). Nested quadrats share a corner, so the smaller
+    # ones show inside the larger.
+    qx: list[float | None] = []
+    qy: list[float | None] = []
+    for u in (u for u in units if u["kind"] == "quadrat"):
+        x0, y0, x1, y1 = u["x"], u["y"], u["x"] + u["w"], u["y"] + u["h"]
+        qx += [x0, x1, x1, x0, x0, None]
+        qy += [y0, y0, y1, y1, y0, None]
+    if qx:
+        fig.add_trace(
+            go.Scatter(
+                x=qx,
+                y=qy,
+                mode="lines",
+                fill="toself",
+                fillcolor=series_color(0),
+                opacity=0.4,
+                line=dict(color=series_color(0), width=1),
+                hoverinfo="skip",
+            )
         )
+    lx: list[float | None] = []
+    ly: list[float | None] = []
     for u in (u for u in units if u["kind"] == "line"):
-        fig.add_shape(
-            type="line", x0=u["x"], y0=u["y"], x1=u["x"], y1=u["y"] + u["h"], line=dict(color=series_color(0), width=2)
-        )
+        lx += [u["x"], u["x"], None]
+        ly += [u["y"], u["y"] + u["h"], None]
+    if lx:
+        fig.add_trace(go.Scatter(x=lx, y=ly, mode="lines", line=dict(color=series_color(0), width=2), hoverinfo="skip"))
     hover = [u for u in units if u["kind"] != "line"] + [u for u in units if u["kind"] == "line"]
     fig.add_trace(
         go.Scatter(
